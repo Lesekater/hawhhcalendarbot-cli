@@ -25,7 +25,92 @@
  * calendarbot events remove <event>: removes the event from the calendar
 */  
 
+use clap::{Parser, Subcommand};
+
+#[derive(Parser)]
+#[clap(name = "calendarbot", version = "1.0", author = "Your Name")]
+#[clap(about = "A simple calendar bot for the mensa and events")]
+struct Cli {
+    /// The command to run
+    #[clap(subcommand)]
+    command: Commands,
+}
+
+#[derive(Subcommand)]
+enum Commands {
+    /// Shows the mensa menu for today
+    Mensa {
+        #[clap(subcommand)]
+        command: MensaCommands,
+    },
+    /// Shows the selected events
+    Events {
+        /// The event to show
+        event: Option<String>,
+    },
+}
+
+#[derive(Subcommand)]
+#[derive(Debug)]
+enum MensaCommands {
+    /// Shows the mensa menu for today
+    Today,
+    /// Shows the mensa menu for tomorrow
+    Tomorrow,
+    /// Shows the mensa menu for the given date
+    Date {
+        /// The date to show the mensa menu for
+        date: String,
+    },
+    /// Shows the mensa settings
+    Settings {
+        #[clap(subcommand)]
+        command: SettingsCommands,
+    },
+}
+
+#[derive(Subcommand)]
+#[derive(Debug)]
+enum SettingsCommands {
+    /// Sets the primary mensa
+    Primary {
+        /// The mensa to set as primary
+        mensa: String,
+    },
+    /// Adds a mensa
+    Add {
+        /// The mensa to add
+        mensa: String,
+    },
+    /// Removes a mensa
+    Remove {
+        /// The mensa to remove
+        mensa: String,
+    },
+    /// Lists all mensas
+    List,
+    /// Sets the occupation (student, employee, guest)
+    Occupation {
+        /// The occupation to set
+        occupation: String,
+    },
+    /// Sets the extras (vegan, vegetarian, lactose-free, no alcohol, no beef, no fish...)
+    Extras {
+        /// The extras to set
+        extras: String,
+    },
+}
 
 fn main() {
-    println!("Hello, world!");
+    let cli = Cli::parse();
+
+
+    match cli.command {
+        Commands::Mensa { command } => {
+            println!("Mensa command (command: {:?})", command);
+        },
+        Commands::Events { event } => {
+            println!("Events command (event: {:?})", event);
+        },
+    }
 }
