@@ -25,7 +25,10 @@
  * calendarbot events remove <event>: removes the event from the calendar
 */  
 
+mod mensa_data;
+
 use clap::{Parser, Subcommand};
+use mensa_data::mensa_data::*;
 
 #[derive(Parser)]
 #[clap(name = "calendarbot", version = "1.0", author = "Your Name")]
@@ -104,10 +107,30 @@ enum SettingsCommands {
 fn main() {
     let cli = Cli::parse();
 
+    let local_data = match mensa_data::mensa_data::load_local_data() {
+        Ok(data) => {
+            println!("Local data loaded successfully.");
+            data
+        },
+        Err(e) => {
+            println!("Local data not available: {}", e);
+            println!("Attempting to fetch data from the server...");
+
+            // Attempt to fetch the data if not available locally
+            if mensa_data::mensa_data::fetch_mensa_data().is_err() {
+                println!("Error fetching mensa data: {}", e);
+                std::process::exit(1);
+            }
+
+            println!("Data fetched successfully.");
+            mensa_data::mensa_data::load_local_data().unwrap()
+        },
+    };
 
     match cli.command {
         Commands::Mensa { command } => {
             println!("Mensa command (command: {:?})", command);
+            println!("Loaded Mensas: {:?}", local_data.keys());
         },
         Commands::Events { event } => {
             println!("Events command (event: {:?})", event);

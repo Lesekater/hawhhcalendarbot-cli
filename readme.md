@@ -12,6 +12,11 @@ This project is part of the Rust WP SoSe2025 course. The goal is to create a com
 2. Filter calendar entries and display them via the CLI.
 3. Perform collision checks for calendar entries to help select non-conflicting courses.
 
+## Current Status
+- Basic client functionality is implemented.
+- Mensadata json files can be downloaded
+- TODO: parsing
+
 ## Team Members
 
 - Niclas Waßmann
