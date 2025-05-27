@@ -38,6 +38,9 @@ struct Cli {
     /// The command to run
     #[clap(subcommand)]
     command: Commands,
+    /// Whether to output the results in JSON format
+    #[arg(long, short, default_value = "true")]
+    json: bool,
 }
 
 #[derive(Subcommand)]
@@ -154,6 +157,11 @@ fn main() {
                 .expect("Data for today not found")
                 .iter()
                 .collect::<Vec<&Meal>>();
+                    if cli.json {
+                        println!("{}", serde_json::to_string(&food_for_date).unwrap());
+                        return;
+                    }
+
                     println!("Mensa Berliner Tor");
                     println!("{}", date_to_use.format("%Y-%m-%d"));
                     for food in food_for_date {
