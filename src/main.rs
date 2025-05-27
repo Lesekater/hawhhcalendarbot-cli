@@ -109,10 +109,7 @@ fn main() {
     let cli = Cli::parse();
 
     let local_data = match mensa_data::mensa_data::load_local_data() {
-        Ok(data) => {
-            println!("Local data loaded successfully.");
-            data
-        },
+        Ok(data) => data,
         Err(e) => {
             println!("Local data not available: {}", e);
             println!("Attempting to fetch data from the server...");
@@ -123,7 +120,8 @@ fn main() {
                 std::process::exit(1);
             }
 
-            println!("Data fetched successfully.");
+            println!("Data fetched successfully.\n");
+
             mensa_data::mensa_data::load_local_data().unwrap()
         },
     };
