@@ -27,10 +27,10 @@
 
 mod meal;
 mod mensa_data;
-mod mensa;
+mod mensa_commands;
 
 use clap::{Parser, Subcommand};
-use mensa::match_mensa_commands;
+use mensa_commands::match_mensa_commands;
 
 #[derive(Parser)]
 #[clap(name = "calendarbot", version = "1.0", author = "Your Name")]
