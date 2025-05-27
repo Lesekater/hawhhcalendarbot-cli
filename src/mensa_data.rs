@@ -87,6 +87,9 @@ pub mod mensa_data {
         // Create the mensa data directory if it doesn't exist
         if !Path::new("./data/mensadata/").exists() {
             fs::create_dir_all("./data/mensadata/")?;
+        } else {
+            // If the directory already exists, remove it to ensure a fresh clone
+            fs::remove_dir_all("./data/mensadata/")?;
         }
 
         // Clone the mensa data repository
@@ -94,8 +97,7 @@ pub mod mensa_data {
             .arg("clone")
             .arg("https://github.com/HAWHHCalendarBot/mensa-data.git")
             .arg("./data/mensadata/")
-            .output()?;
-        
+            .output()?;        
 
         if output.status.success() {
             // If the clone was successful, return Ok

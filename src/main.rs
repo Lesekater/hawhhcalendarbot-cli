@@ -69,6 +69,8 @@ enum MensaCommands {
         /// The date to show the mensa menu for
         date: String,
     },
+    /// Force update of the mensa data
+    Update,
     /// Shows the mensa settings
     Settings {
         #[clap(subcommand)]
@@ -168,6 +170,13 @@ fn main() {
                         println!();
                         println!("{}", food);
                     }
+                },
+                MensaCommands::Update => {
+                    println!("Updating mensa data...");
+                    match mensa_data::mensa_data::fetch_mensa_data() {
+                        Ok(_) => println!("Mensa data updated successfully."),
+                        Err(e) => println!("Error updating mensa data: {}", e),
+                    };
                 },
                 MensaCommands::Settings { command } => {
                     match command {
