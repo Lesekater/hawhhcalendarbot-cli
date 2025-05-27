@@ -185,7 +185,7 @@ fn main() {
                 }
             }
         }
-        Commands::Events { event } => {}
+        Commands::Events { event: _ } => {}
     }
 }
 
