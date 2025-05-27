@@ -39,7 +39,7 @@ struct Cli {
     #[clap(subcommand)]
     command: Commands,
     /// Whether to output the results in JSON format
-    #[arg(long, short, default_value = "true")]
+    #[arg(long, short, default_value = "false")]
     json: bool,
 }
 
