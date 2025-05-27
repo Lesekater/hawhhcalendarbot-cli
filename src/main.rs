@@ -1,6 +1,6 @@
 /*
  * Commands:
- * 
+ *
  * calendarbot --help / calendarbot help
  * calendarbot --version / calendarbot version
  * ## Mensa
@@ -23,13 +23,14 @@
  * calendarbot events list --filter <filter>: lists all available events with the given filter
  * calendarbot events add <event>: adds the event to the calendar
  * calendarbot events remove <event>: removes the event from the calendar
-*/  
+*/
 
-mod mensa_data;
 mod meal;
+mod mensa_data;
 
 use clap::{Parser, Subcommand};
 use meal::Meal;
+use mensa_data::mensa_data::MensaData;
 
 #[derive(Parser)]
 #[clap(name = "calendarbot", version = "1.0", author = "Your Name")]
@@ -48,7 +49,7 @@ enum Commands {
     /// Shows the mensa menu for today
     Mensa {
         #[clap(subcommand)]
-        command: MensaCommands,
+        command: Option<MensaCommands>,
     },
     /// Shows the selected events
     Events {
@@ -57,29 +58,32 @@ enum Commands {
     },
 }
 
-#[derive(Subcommand)]
-#[derive(Debug)]
+#[derive(Subcommand, Debug)]
 enum MensaCommands {
     /// Shows the mensa menu for today
+    #[clap(alias = "tod")]
     Today,
     /// Shows the mensa menu for tomorrow
+    #[clap(alias = "tom")]
     Tomorrow,
     /// Shows the mensa menu for the given date
+    #[clap(alias = "d")]
     Date {
         /// The date to show the mensa menu for
         date: String,
     },
     /// Force update of the mensa data
+    #[clap(alias = "u")]
     Update,
     /// Shows the mensa settings
+    #[clap(alias = "s")]
     Settings {
         #[clap(subcommand)]
         command: SettingsCommands,
     },
 }
 
-#[derive(Subcommand)]
-#[derive(Debug)]
+#[derive(Subcommand, Debug)]
 enum SettingsCommands {
     /// Sets the primary mensa
     Primary {
@@ -128,88 +132,103 @@ fn main() {
             println!("Data fetched successfully.\n");
 
             mensa_data::mensa_data::load_local_data().unwrap()
-        },
+        }
     };
 
     let currentdate = chrono::Local::now().date_naive();
 
-    match cli.command {
+    match &cli.command {
         Commands::Mensa { command } => {
             match &command {
-                MensaCommands::Today | MensaCommands::Tomorrow | MensaCommands::Date { .. } => {
-                    let date_to_use = match &command {
-                        MensaCommands::Today => currentdate,
-                        MensaCommands::Tomorrow => currentdate.succ_opt().expect("Failed to get tomorrow's date"),
-                        MensaCommands::Date { date } => {
-                            match chrono::NaiveDate::parse_from_str(date, "%d.%m.%Y") {
-                                Ok(parsed_date) => parsed_date,
-                                Err(_) => {
-                                    println!("Invalid date format. Please use DD.MM.YYYY.");
-                                    return;
-                                },
-                            }
-                        },
-                        _ => panic!("Unexpected command variant"),
-                    };
-
-                    let food_for_date = local_data.get("Mensa Berliner Tor")
-                .and_then(|mensa| mensa.get(&date_to_use.format("%Y").to_string()))
-                .and_then(|year| year.get(&date_to_use.format("%m").to_string()))
-                .and_then(|month| month.get(&date_to_use.format("%d").to_string()))
-                .expect("Data for today not found")
-                .iter()
-                .collect::<Vec<&Meal>>();
-                    if cli.json {
-                        println!("{}", serde_json::to_string(&food_for_date).unwrap());
-                        return;
-                    }
-
-                    println!("Mensa Berliner Tor");
-                    println!("{}", date_to_use.format("%Y-%m-%d"));
-                    for food in food_for_date {
-                        println!();
-                        println!("{}", food);
-                    }
-                },
-                MensaCommands::Update => {
+                Some(MensaCommands::Today)
+                | Some(MensaCommands::Tomorrow)
+                | Some(MensaCommands::Date { .. }) => {
+                    today_command(&command, &local_data, currentdate, &cli);
+                }
+                Some(MensaCommands::Update) => {
                     println!("Updating mensa data...");
                     match mensa_data::mensa_data::fetch_mensa_data() {
                         Ok(_) => println!("Mensa data updated successfully."),
                         Err(e) => println!("Error updating mensa data: {}", e),
                     };
-                },
-                MensaCommands::Settings { command } => {
+                }
+                Some(MensaCommands::Settings { command }) => {
                     match command {
                         SettingsCommands::Primary { mensa } => {
                             println!("Setting primary mensa to: {}", mensa);
                             // Here you would set the primary mensa
-                        },
+                        }
                         SettingsCommands::Add { mensa } => {
                             println!("Adding mensa: {}", mensa);
                             // Here you would add a mensa
-                        },
+                        }
                         SettingsCommands::Remove { mensa } => {
                             println!("Removing mensa: {}", mensa);
                             // Here you would remove a mensa
-                        },
+                        }
                         SettingsCommands::List => {
                             println!("Listing all mensas.");
                             // Here you would list all available mensas
-                        },
+                        }
                         SettingsCommands::Occupation { occupation } => {
                             println!("Setting occupation to: {}", occupation);
                             // Here you would set the occupation
-                        },
+                        }
                         SettingsCommands::Extras { extras } => {
                             println!("Setting extras to: {}", extras);
                             // Here you would set the extras
-                        },
+                        }
                     }
-                },
+                }
+                None => {
+                    today_command(&Some(MensaCommands::Today), &local_data, currentdate, &cli);
+                }
             }
-        },
-        Commands::Events { event } => {
-            println!("Events command (event: {:?})", event);
-        },
+        }
+        Commands::Events { event } => {}
+    }
+}
+
+fn today_command(
+    command: &Option<MensaCommands>,
+    local_data: &MensaData,
+    currentdate: chrono::NaiveDate,
+    cli: &Cli,
+) {
+    let date_to_use = match &command {
+        Some(MensaCommands::Today) => currentdate,
+        Some(MensaCommands::Tomorrow) => currentdate
+            .succ_opt()
+            .expect("Failed to get tomorrow's date"),
+        Some(MensaCommands::Date { date }) => {
+            match chrono::NaiveDate::parse_from_str(date, "%d.%m.%Y") {
+                Ok(parsed_date) => parsed_date,
+                Err(_) => {
+                    println!("Invalid date format. Please use DD.MM.YYYY.");
+                    return;
+                }
+            }
+        }
+        _ => panic!("Unexpected command variant"),
+    };
+
+    let food_for_date = local_data
+        .get("Mensa Berliner Tor")
+        .and_then(|mensa| mensa.get(&date_to_use.format("%Y").to_string()))
+        .and_then(|year| year.get(&date_to_use.format("%m").to_string()))
+        .and_then(|month| month.get(&date_to_use.format("%d").to_string()))
+        .expect("Data for today not found")
+        .iter()
+        .collect::<Vec<&Meal>>();
+    if cli.json {
+        println!("{}", serde_json::to_string(&food_for_date).unwrap());
+        return;
+    }
+
+    println!("Mensa Berliner Tor");
+    println!("{}", date_to_use.format("%Y-%m-%d"));
+    for food in food_for_date {
+        println!();
+        println!("{}", food);
     }
 }

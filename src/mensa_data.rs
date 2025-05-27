@@ -9,7 +9,7 @@ pub mod mensa_data {
 
     /// Represents the mensa data
     /// <mensa-name>/<year>/<month>/<day>.json
-    type MensaData = HashMap<String, HashMap<String, HashMap<String, HashMap<String, Vec<Meal>>>>>;
+    pub type MensaData = HashMap<String, HashMap<String, HashMap<String, HashMap<String, Vec<Meal>>>>>;
 
     pub fn load_local_data() -> Result<MensaData, Box<dyn Error>> {
         // Check locally if the data is available
