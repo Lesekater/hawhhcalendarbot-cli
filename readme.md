@@ -7,6 +7,19 @@ This project is part of the Rust WP SoSe2025 course. The goal is to create a com
 ### Main Goal
 - Display and filter Mensa meals by different locations and days, similar to the Telegram bot.
 
+### Goal
+#### Jun 03. (Error Handling, _Serde_ Json)
+- Parsing Json Mensa & Filtering
+- Config Mensa
+#### Jun 24. (Traits & Generics)
+- Implement Traits for Mensa
+- Parse Cal Entries from Informatik, Elektrotechnik
+- Add Config for Cal Entries (My Modules...)
+#### Jul 08. (Multi-Threadig, Enums & Pattern Matching)
+- Filter and show calendar entries by own config
+- Add Webscaper for Mechatronic Entries
+- Add Multithreading
+
 ### Soft Goals
 1. Add functionality to parse calendar data for Mechatronik students. This may involve extending the downloader ([GitHub Repository](https://github.com/HAWHHCalendarBot/downloader)) to handle PDF parsing for schedules not available as ICS files.
 2. Filter calendar entries and display them via the CLI.
@@ -28,3 +41,5 @@ This project is part of the Rust WP SoSe2025 course. The goal is to create a com
 - For Mechatronik schedules, some data is only available in PDF format, requiring a PDF scraper to extract relevant information.
 - Informatik schedules are available as ICS files, simplifying parsing.
 - Elektrotechnik schedules also provide ICS files, but other departments may require additional parsing efforts.
+
+- instead of secondary mensas we will implment aliases wich replace the add and remove commands with alias. Addritial Mensas can be accesed via a flag --mensa \<alias>
