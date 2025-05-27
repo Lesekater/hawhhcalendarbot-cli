@@ -26,9 +26,10 @@
 */  
 
 mod mensa_data;
+mod meal;
 
 use clap::{Parser, Subcommand};
-use mensa_data::mensa_data::*;
+use meal::Meal;
 
 #[derive(Parser)]
 #[clap(name = "calendarbot", version = "1.0", author = "Your Name")]
@@ -130,16 +131,25 @@ fn main() {
     match cli.command {
         Commands::Mensa { command } => {
             println!("Mensa command (command: {:?})", command);
-            println!("Loaded Mensas: {:?}", local_data.keys());
-            println!("Years of Berliner Tor: {:?}", local_data.get("Mensa Berliner Tor").expect("Name not found").keys());
+            // println!("Loaded Mensas: {:?}", local_data.keys());
+            // println!("Years of Berliner Tor: {:?}", local_data.get("Mensa Berliner Tor").expect("Name not found").keys());
 
             print!("\n");
-            let currentdate = chrono::Local::now();
-            println!("Data from today: {}", local_data.get("Mensa Berliner Tor")
+            let currentdate = chrono::Local::now().date_naive();
+            let food_today = local_data.get("Mensa Berliner Tor")
                 .and_then(|mensa| mensa.get(&currentdate.format("%Y").to_string()))
                 .and_then(|year| year.get(&currentdate.format("%m").to_string()))
                 .and_then(|month| month.get(&currentdate.format("%d").to_string()))
-                .unwrap_or(&"No data available".to_string()));
+                .expect("Data for today not found")
+                .iter()
+                .collect::<Vec<&Meal>>();
+
+            println!("Mensa Berliner Tor");
+            println!("{}", &currentdate.format("%d.%m.%Y"));
+            for food in food_today {
+                println!();
+                println!("{}", food);
+            }
         },
         Commands::Events { event } => {
             println!("Events command (event: {:?})", event);

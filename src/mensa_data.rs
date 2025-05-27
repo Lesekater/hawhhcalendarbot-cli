@@ -5,9 +5,11 @@ pub mod mensa_data {
     use std::process::Command;
     use std::collections::HashMap;
 
+    use crate::meal::Meal;
+
     /// Represents the mensa data
     /// <mensa-name>/<year>/<month>/<day>.json
-    type MensaData = HashMap<String, HashMap<String, HashMap<String, HashMap<String, String>>>>;
+    type MensaData = HashMap<String, HashMap<String, HashMap<String, HashMap<String, Vec<Meal>>>>>;
 
     pub fn load_local_data() -> Result<MensaData, Box<dyn Error>> {
         // Check locally if the data is available
@@ -65,7 +67,11 @@ pub mod mensa_data {
                         let mensa_entry = data.entry(mensa_name.clone()).or_insert_with(HashMap::new);
                         let year_entry = mensa_entry.entry(year.clone()).or_insert_with(HashMap::new);
                         let month_entry = year_entry.entry(month.clone()).or_insert_with(HashMap::new);
-                        month_entry.insert(day, file_content);
+                        
+                        let entry = serde_json::from_str::<Vec<Meal>>(&file_content)
+                            .map_err(|e| format!("Failed to parse JSON for {}: {}", file_path, e))?;
+
+                        month_entry.insert(day, entry);
                     }
                 }
             }
