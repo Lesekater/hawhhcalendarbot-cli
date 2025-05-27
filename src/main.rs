@@ -131,6 +131,15 @@ fn main() {
         Commands::Mensa { command } => {
             println!("Mensa command (command: {:?})", command);
             println!("Loaded Mensas: {:?}", local_data.keys());
+            println!("Years of Berliner Tor: {:?}", local_data.get("Mensa Berliner Tor").expect("Name not found").keys());
+
+            print!("\n");
+            let currentdate = chrono::Local::now();
+            println!("Data from today: {}", local_data.get("Mensa Berliner Tor")
+                .and_then(|mensa| mensa.get(&currentdate.format("%Y").to_string()))
+                .and_then(|year| year.get(&currentdate.format("%m").to_string()))
+                .and_then(|month| month.get(&currentdate.format("%d").to_string()))
+                .unwrap_or(&"No data available".to_string()));
         },
         Commands::Events { event } => {
             println!("Events command (event: {:?})", event);

@@ -7,7 +7,7 @@ pub mod mensa_data {
 
     /// Represents the mensa data
     /// <mensa-name>/<year>/<month>/<day>.json
-    type MensaData = HashMap<String, String>;
+    type MensaData = HashMap<String, HashMap<String, HashMap<String, HashMap<String, String>>>>;
 
     pub fn load_local_data() -> Result<MensaData, Box<dyn Error>> {
         // Check locally if the data is available
@@ -32,9 +32,43 @@ pub mod mensa_data {
             let mensa_name = entry.file_name().into_string().unwrap();
             let mensa_path = entry.path();
 
-            data.insert(mensa_name.clone(), mensa_path.to_str().unwrap().to_string());
+            let mut folder_to_process = vec![mensa_path.clone()];
 
-            // TODO: Read and parse the JSON files in the mensa directory
+            while let Some(folder) = folder_to_process.pop() {
+                // Read the contents of the current directory
+                for entry in fs::read_dir(&folder)? {
+                    let entry = entry?;
+
+                    if entry.path().is_dir() {
+                        // If the entry is a directory, add it to the list of folders to process
+                        folder_to_process.push(entry.path());
+                    } else if entry.path().extension().and_then(|s| s.to_str()) == Some("json") {
+                        // If the entry is a JSON file, read it and add it to the data
+                        let entry_path = entry.path();
+                        let file_path = entry_path.to_str().ok_or_else(|| format!("Invalid file path - entry: {:?}", entry_path))?;
+                        let file_content = fs::read_to_string(&entry_path)?;
+                        let parts = file_path
+                            .strip_suffix(".json")
+                            .unwrap()
+                            .split('/')
+                            .rev()
+                            .take(3)
+                            .collect::<Vec<&str>>();
+                        if parts.len() != 3 {
+                            return Err(format!("Invalid file path structure: {}", file_path).into());
+                        }
+                        let day = parts[0].to_string();
+                        let month = parts[1].to_string();
+                        let year = parts[2].to_string();
+
+                        // Insert or use existing nested maps to avoid overwriting existing data
+                        let mensa_entry = data.entry(mensa_name.clone()).or_insert_with(HashMap::new);
+                        let year_entry = mensa_entry.entry(year.clone()).or_insert_with(HashMap::new);
+                        let month_entry = year_entry.entry(month.clone()).or_insert_with(HashMap::new);
+                        month_entry.insert(day, file_content);
+                    }
+                }
+            }
         }
 
         // Return the mensa data
