@@ -4,6 +4,8 @@ pub mod mensa_data {
     use std::error::Error;
     use std::process::Command;
     use std::collections::HashMap;
+    use std::fs::File;
+    use std::io::prelude::*;
 
     use crate::meal::Meal;
 
@@ -20,7 +22,21 @@ pub mod mensa_data {
             return Err(format!("Local mensa data not available at {:?}", path).into());
         }
 
-        // If the path exists, read the data from the directory
+        let currentdate = chrono::Local::now().date_naive();
+        
+        let mut file = File::open("./data/mensadata/timestamp")?;
+        let mut contents = String::new();
+        file.read_to_string(&mut contents)?;
+        let last_change = chrono::DateTime::from_timestamp(contents.parse()?, 0).unwrap();
+        let last_change_date = last_change.date_naive();
+        
+        if currentdate.signed_duration_since(last_change_date) > chrono::Duration::days(1) {
+            // If the data is older than 1 day, fetch new data
+            println!("Local mensa data is outdated. Fetching new data...");
+            fetch_mensa_data()?;
+        }
+
+        // Read data
         let mut data: MensaData = HashMap::new();
 
         for entry in fs::read_dir(path)? {
@@ -90,6 +106,7 @@ pub mod mensa_data {
         } else {
             // If the directory already exists, remove it to ensure a fresh clone
             fs::remove_dir_all("./data/mensadata/")?;
+            fs::create_dir_all("./data/mensadata/")?;
         }
 
         // Clone the mensa data repository
@@ -102,6 +119,11 @@ pub mod mensa_data {
         if output.status.success() {
             // If the clone was successful, return Ok
             println!("Mensa data cloned successfully.");
+
+            // Refresh Timestamp
+            let mut file = File::create("./data/mensadata/timestamp")?;
+            file.write_all(&chrono::Local::now().timestamp().to_string().into_bytes()).expect("couldnt write timestamp");
+
             Ok(())
         } else {
             let error_message = String::from_utf8_lossy(&output.stderr);
