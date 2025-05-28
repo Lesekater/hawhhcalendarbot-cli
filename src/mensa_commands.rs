@@ -81,7 +81,7 @@ fn today_command(
         .and_then(|mensa| mensa.get(&date_to_use.format("%Y").to_string()))
         .and_then(|year| year.get(&date_to_use.format("%m").to_string()))
         .and_then(|month| month.get(&date_to_use.format("%d").to_string()))
-        .expect("Data for today not found")
+        .expect("Data for date not found")
         .iter()
         .collect::<Vec<&Meal>>();
     if cli.json {
