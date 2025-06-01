@@ -78,7 +78,14 @@ fn today_command(
         _ => panic!("Unexpected command variant"),
     };
 
-    let food_for_date = mensa_data::mensa_data::get_food_for_date(local_data, date_to_use, MENSA_NAME);
+    let food_for_date = match mensa_data::mensa_data::get_food_for_date(local_data, date_to_use, MENSA_NAME) {
+        Ok(food) => food,
+        Err(e) => {
+            println!("Error fetching food for date: {}", e);
+            return;
+        }
+    };
+    
     if cli.json {
         println!("{}", serde_json::to_string(&food_for_date).unwrap());
         return;

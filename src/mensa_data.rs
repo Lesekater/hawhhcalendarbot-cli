@@ -97,15 +97,16 @@ pub mod mensa_data {
         Ok(data)
     }
 
-    pub fn get_food_for_date<'a>(data: &'a MensaData, date: chrono::NaiveDate, mensa_name: &str) -> Vec<&'a Meal> {
-        data
-            .get(mensa_name)
-            .and_then(|mensa| mensa.get(&date.format("%Y").to_string()))
-            .and_then(|year| year.get(&date.format("%m").to_string()))
-            .and_then(|month| month.get(&date.format("%d").to_string()))
-            .expect("Data for date not found")
-            .iter()
-            .collect::<Vec<&Meal>>()
+    pub fn get_food_for_date<'a>(data: &'a MensaData, date: chrono::NaiveDate, mensa_name: &str) -> Result<Vec<&'a Meal>, Box<dyn Error>> {
+        Ok(
+            data.get(mensa_name)
+                .and_then(|mensa| mensa.get(&date.format("%Y").to_string()))
+                .and_then(|year| year.get(&date.format("%m").to_string()))
+                .and_then(|month| month.get(&date.format("%d").to_string()))
+                .ok_or_else(|| "No data found for the given date")?
+                .iter()
+                .collect::<Vec<&Meal>>(),
+        )
     }
 
     pub fn fetch_mensa_data() -> Result<(), Box<dyn Error>> {
