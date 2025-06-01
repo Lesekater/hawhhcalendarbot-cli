@@ -36,7 +36,7 @@ impl fmt::Display for Meal {
 
         write!(
             f,
-            "{}\n{}€ [{:?}]",
+            "{}\n{}€ [{}]",
             filtered_name, self.prices.price_student, self.contents
         )
     }
@@ -117,5 +117,46 @@ impl std::fmt::Debug for Contents {
             fmt.write_str("Vegetarian ")?;
         }
         fmt.write_str("}")
+    }
+}
+
+impl fmt::Display for Contents {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let mut contents = Vec::new();
+        if self.alcohol {
+            contents.push("Alcohol");
+        }
+        if self.beef {
+            contents.push("Beef");
+        }
+        if self.fish {
+            contents.push("Fish");
+        }
+        if self.game {
+            contents.push("Game");
+        }
+        if self.gelatine {
+            contents.push("Gelatine");
+        }
+        if self.lactose_free {
+            contents.push("Lactose Free");
+        }
+        if self.lamb {
+            contents.push("Lamb");
+        }
+        if self.pig {
+            contents.push("Pig");
+        }
+        if self.poultry {
+            contents.push("Poultry");
+        }
+        if self.vegan {
+            contents.push("Vegan");
+        }
+        if self.vegetarian {
+            contents.push("Vegetarian");
+        }
+
+        write!(f, "{}", contents.join(", "))
     }
 }
