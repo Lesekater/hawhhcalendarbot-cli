@@ -4,10 +4,27 @@ const MENSA_NAME: &str = "Mensa Berliner Tor";
 
 pub fn match_mensa_commands(
     command: &Option<MensaCommands>,
-    local_data: &MensaData,
     currentdate: chrono::NaiveDate,
     cli: &Cli,
 ) {
+    let local_data = match mensa_data::mensa_data::load_local_data() {
+        Ok(data) => data,
+        Err(e) => {
+            println!("Local data not available: {}", e);
+            println!("Attempting to fetch data from the server...");
+
+            // Attempt to fetch the data if not available locally
+            if mensa_data::mensa_data::fetch_mensa_data().is_err() {
+                println!("Error fetching mensa data: {}", e);
+                std::process::exit(1);
+            }
+
+            println!("Data fetched successfully.\n");
+
+            mensa_data::mensa_data::load_local_data().unwrap()
+        }
+    };
+
     match &command {
         Some(MensaCommands::Today)
         | Some(MensaCommands::Tomorrow)
@@ -91,10 +108,8 @@ fn today_command(
         return;
     }
 
-    println!("{}", MENSA_NAME);
-    println!("{}", date_to_use.format("%Y-%m-%d"));
+    println!("{}\n{}", MENSA_NAME, date_to_use.format("%Y-%m-%d"));
     for food in food_for_date {
-        println!();
-        println!("{}", food);
+        println!("\n{}", food);
     }
 }

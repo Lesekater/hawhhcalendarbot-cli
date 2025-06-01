@@ -117,29 +117,11 @@ enum SettingsCommands {
 fn main() {
     let cli = Cli::parse();
 
-    let local_data = match mensa_data::mensa_data::load_local_data() {
-        Ok(data) => data,
-        Err(e) => {
-            println!("Local data not available: {}", e);
-            println!("Attempting to fetch data from the server...");
-
-            // Attempt to fetch the data if not available locally
-            if mensa_data::mensa_data::fetch_mensa_data().is_err() {
-                println!("Error fetching mensa data: {}", e);
-                std::process::exit(1);
-            }
-
-            println!("Data fetched successfully.\n");
-
-            mensa_data::mensa_data::load_local_data().unwrap()
-        }
-    };
-
     let currentdate = chrono::Local::now().date_naive();
 
     match &cli.command {
         Commands::Mensa { command } => {
-            match_mensa_commands(command, &local_data, currentdate, &cli);
+            match_mensa_commands(command, currentdate, &cli);
         }
         Commands::Events { event: _ } => {}
     }
