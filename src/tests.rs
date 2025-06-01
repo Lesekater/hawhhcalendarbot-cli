@@ -5,7 +5,7 @@ mod tests {
 
     use chrono::NaiveDate;
 
-    use crate::mensa_data::mensa_data::{get_food_for_date, MensaData};
+    use crate::mensa_data::mensa_data::{get_food_for_date, load_local_data, MensaData};
     use crate::meal::{Meal, Prices, Contents};
 
     #[test]
@@ -38,5 +38,39 @@ mod tests {
         assert_eq!(meals.len(), 2);
         assert_eq!(meals[0].name, "Meal1");
         assert_eq!(meals[1].name, "Meal2");
+    }
+
+    #[test]
+    fn test_load_local_data() {
+        let test_meal = Meal {
+            name: "Testgericht".to_string(),
+            date: NaiveDate::from_ymd_opt(2025, 6, 1).unwrap(),
+            category: "Hauptgericht".to_string(),
+            additives: BTreeMap::new(),
+            prices: Prices {
+                price_attendant: 5.0,
+                price_guest: 6.0,
+                price_student: 4.0,
+            },
+            contents: Contents{
+                alcohol: false,
+                beef: false,
+                fish: false,
+                game: false,
+                gelatine: false,
+                vegetarian: true,
+                vegan: true,
+                lactose_free: false,
+                lamb: false,
+                pig: false,
+                poultry: false,
+            },
+        };
+
+        let result = load_local_data();
+
+        assert!(result.is_ok(), "Failed to load local data: {:?}", result.err());
+        let data = result.unwrap();
+        assert_eq!(data.get("TestMensa").unwrap().get("2025").unwrap().get("06").unwrap().get("01").unwrap(), &vec![test_meal], "Loaded data does not match the expected test meal");
     }
 }
