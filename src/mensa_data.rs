@@ -30,8 +30,8 @@ pub mod mensa_data {
         let last_change = chrono::DateTime::from_timestamp(contents.parse()?, 0).unwrap();
         let last_change_date = last_change.date_naive();
         
+        // If the data is older than 1 day, fetch new data
         if currentdate.signed_duration_since(last_change_date) > chrono::Duration::days(1) {
-            // If the data is older than 1 day, fetch new data
             println!("Local mensa data is outdated. Fetching new data...");
             fetch_mensa_data()?;
         }
