@@ -47,7 +47,7 @@ impl fmt::Display for Meal {
 #[derive(Default, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "PascalCase")]
 pub struct Contents {
-    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")] // only serialize if true
     pub alcohol: bool,
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub beef: bool,
