@@ -1,0 +1,24 @@
+[
+  {
+    "Name": "Testgericht",
+    "Category": "Hauptgericht",
+    "Date": "2025-06-01",
+    "Additives": {},
+    "PriceAttendant": 5.0,
+    "PriceGuest": 6.0,
+    "PriceStudent": 4.0,
+    "Vegan": true,
+    "Vegetarian": true,
+    "Bio": false,
+    "Fish": false,
+    "Pork": false,
+    "Beef": false,
+    "Alcohol": false,
+    "Game": false,
+    "Gelatine": false,
+    "LactoseFree": false,
+    "Lamb": false,
+    "Pig": false,
+    "Poultry": false
+  }
+]
