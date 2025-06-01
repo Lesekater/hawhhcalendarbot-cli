@@ -78,6 +78,7 @@ fn today_command(
     currentdate: chrono::NaiveDate,
     cli: &Cli,
 ) {
+    // Determine the date to use based on the command
     let date_to_use = match &command {
         Some(MensaCommands::Today) => currentdate,
         Some(MensaCommands::Tomorrow) => currentdate
@@ -95,6 +96,7 @@ fn today_command(
         _ => panic!("Unexpected command variant"),
     };
 
+    // Find the food for the specified date
     let food_for_date = match mensa_data::mensa_data::get_food_for_date(local_data, date_to_use, MENSA_NAME) {
         Ok(food) => food,
         Err(e) => {
@@ -103,11 +105,13 @@ fn today_command(
         }
     };
     
+    // If json option is set, print the food in JSON format
     if cli.json {
         println!("{}", serde_json::to_string(&food_for_date).unwrap());
         return;
     }
 
+    // output formatted date and food items
     println!("{}\n{}", MENSA_NAME, date_to_use.format("%Y-%m-%d"));
     for food in food_for_date {
         println!("\n{}", food);
