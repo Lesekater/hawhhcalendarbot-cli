@@ -1,4 +1,6 @@
-use crate::{meal::Meal, mensa_data::mensa_data::MensaData, mensa_data::mensa_data::fetch_mensa_data, Cli, MensaCommands, SettingsCommands};
+use crate::{mensa_data::{self, mensa_data::{fetch_mensa_data, MensaData}}, Cli, MensaCommands, SettingsCommands};
+
+const MENSA_NAME: &str = "Mensa Berliner Tor";
 
 pub fn match_mensa_commands(
     command: &Option<MensaCommands>,
@@ -76,20 +78,13 @@ fn today_command(
         _ => panic!("Unexpected command variant"),
     };
 
-    let food_for_date = local_data
-        .get("Mensa Berliner Tor")
-        .and_then(|mensa| mensa.get(&date_to_use.format("%Y").to_string()))
-        .and_then(|year| year.get(&date_to_use.format("%m").to_string()))
-        .and_then(|month| month.get(&date_to_use.format("%d").to_string()))
-        .expect("Data for date not found")
-        .iter()
-        .collect::<Vec<&Meal>>();
+    let food_for_date = mensa_data::mensa_data::get_food_for_date(local_data, date_to_use, MENSA_NAME);
     if cli.json {
         println!("{}", serde_json::to_string(&food_for_date).unwrap());
         return;
     }
 
-    println!("Mensa Berliner Tor");
+    println!("{}", MENSA_NAME);
     println!("{}", date_to_use.format("%Y-%m-%d"));
     for food in food_for_date {
         println!();
