@@ -29,7 +29,7 @@ pub fn match_mensa_commands(
         Some(MensaCommands::Today)
         | Some(MensaCommands::Tomorrow)
         | Some(MensaCommands::Date { .. }) => {
-            today_command(&command, &local_data, currentdate, &cli);
+            date_command(&command, &local_data, currentdate, &cli);
         }
         Some(MensaCommands::Update) => {
             println!("Updating mensa data...");
@@ -67,12 +67,12 @@ pub fn match_mensa_commands(
             }
         }
         None => {
-            today_command(&Some(MensaCommands::Today), &local_data, currentdate, &cli);
+            date_command(&Some(MensaCommands::Today), &local_data, currentdate, &cli);
         }
     }
 }
 
-fn today_command(
+fn date_command(
     command: &Option<MensaCommands>,
     local_data: &MensaData,
     currentdate: chrono::NaiveDate,
