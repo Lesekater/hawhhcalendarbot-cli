@@ -26,9 +26,11 @@
 */
 
 mod meal;
-mod mensa_data;
 mod mensa_commands;
+mod mensa_data;
 mod tests;
+
+mod config_managment;
 
 use clap::{Parser, Subcommand};
 use mensa_commands::match_mensa_commands;
