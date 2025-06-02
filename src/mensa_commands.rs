@@ -1,16 +1,35 @@
-use crate::{meal::Meal, mensa_data::mensa_data::MensaData, mensa_data::mensa_data::fetch_mensa_data, Cli, MensaCommands, SettingsCommands};
+use crate::{mensa_data::{self, mensa_data::{fetch_mensa_data, MensaData}}, Cli, MensaCommands, SettingsCommands};
+
+const MENSA_NAME: &str = "Mensa Berliner Tor";
 
 pub fn match_mensa_commands(
     command: &Option<MensaCommands>,
-    local_data: &MensaData,
     currentdate: chrono::NaiveDate,
     cli: &Cli,
 ) {
+    let local_data = match mensa_data::mensa_data::load_local_data() {
+        Ok(data) => data,
+        Err(e) => {
+            println!("Local data not available: {}", e);
+            println!("Attempting to fetch data from the server...");
+
+            // Attempt to fetch the data if not available locally
+            if mensa_data::mensa_data::fetch_mensa_data().is_err() {
+                println!("Error fetching mensa data: {}", e);
+                std::process::exit(1);
+            }
+
+            println!("Data fetched successfully.\n");
+
+            mensa_data::mensa_data::load_local_data().unwrap()
+        }
+    };
+
     match &command {
         Some(MensaCommands::Today)
         | Some(MensaCommands::Tomorrow)
         | Some(MensaCommands::Date { .. }) => {
-            today_command(&command, &local_data, currentdate, &cli);
+            date_command(&command, &local_data, currentdate, &cli);
         }
         Some(MensaCommands::Update) => {
             println!("Updating mensa data...");
@@ -48,17 +67,18 @@ pub fn match_mensa_commands(
             }
         }
         None => {
-            today_command(&Some(MensaCommands::Today), &local_data, currentdate, &cli);
+            date_command(&Some(MensaCommands::Today), &local_data, currentdate, &cli);
         }
     }
 }
 
-fn today_command(
+fn date_command(
     command: &Option<MensaCommands>,
     local_data: &MensaData,
     currentdate: chrono::NaiveDate,
     cli: &Cli,
 ) {
+    // Determine the date to use based on the command
     let date_to_use = match &command {
         Some(MensaCommands::Today) => currentdate,
         Some(MensaCommands::Tomorrow) => currentdate
@@ -76,23 +96,24 @@ fn today_command(
         _ => panic!("Unexpected command variant"),
     };
 
-    let food_for_date = local_data
-        .get("Mensa Berliner Tor")
-        .and_then(|mensa| mensa.get(&date_to_use.format("%Y").to_string()))
-        .and_then(|year| year.get(&date_to_use.format("%m").to_string()))
-        .and_then(|month| month.get(&date_to_use.format("%d").to_string()))
-        .expect("Data for date not found")
-        .iter()
-        .collect::<Vec<&Meal>>();
+    // Find the food for the specified date
+    let food_for_date = match mensa_data::mensa_data::get_food_for_date(local_data, date_to_use, MENSA_NAME) {
+        Ok(food) => food,
+        Err(e) => {
+            println!("Error fetching food for date: {}", e);
+            return;
+        }
+    };
+    
+    // If json option is set, print the food in JSON format
     if cli.json {
         println!("{}", serde_json::to_string(&food_for_date).unwrap());
         return;
     }
 
-    println!("Mensa Berliner Tor");
-    println!("{}", date_to_use.format("%Y-%m-%d"));
+    // output formatted date and food items
+    println!("{}\n{}", MENSA_NAME, date_to_use.format("%Y-%m-%d"));
     for food in food_for_date {
-        println!();
-        println!("{}", food);
+        println!("\n{}", food);
     }
 }
