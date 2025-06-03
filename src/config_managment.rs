@@ -1,8 +1,8 @@
 use clap::builder::Str;
 use serde::{Deserialize, Serialize};
 use serde_json;
-use std::fs;
 use std::error::Error;
+use std::fs;
 
 //enum of possibel extras to choose from:
 #[derive(Serialize, Deserialize, PartialEq)]
@@ -32,17 +32,28 @@ struct Config {
     extras: Option<Vec<Extras>>,
 }
 
+impl Config {
+    fn new() -> Config {
+        Self {
+            primary_mensa: None,
+            mensa_list: Some(Vec::new()),
+            occupation: None,
+            extras: Some(Vec::new()),
+        }
+    }
+}
+
 //Funktionen für Custom Json Parser:
-fn json_to_struct(load_path: String)/* -> Result<Config, Box<dyn Error>> */{
+fn json_to_struct(load_path: String) /* -> Result<Config, Box<dyn Error>> */
+{
     let json_file = fs::read_to_string(load_path);
     //print!("{:?}", json_file);
     string_seperation(json_file.unwrap());
 }
 
-fn struct_to_json(save_path: String, config: Config)/*  -> Result<()> */{}
+fn struct_to_json(save_path: String, config: Config) /*  -> Result<()> */ {}
 
 fn string_seperation(input_string: String) {
-
     //let chars_to_trimm: &char = &[' '];
     let trimmed_str = input_string.trim_matches(' ');
     let trimmed_str_new = trimmed_str.trim_matches('\n');
@@ -53,7 +64,7 @@ fn string_seperation(input_string: String) {
 //Funktionen für das Config Managment:
 pub fn new_config() -> Config {
     let extra_vec = vec![Extras::Vegan, Extras::LactoseFree];
-    let config = Config{
+    let config = Config {
         primary_mensa: Some("Berliner Tor".to_string()),
         mensa_list: None,
         occupation: Some(Occupations::Student),
@@ -63,18 +74,32 @@ pub fn new_config() -> Config {
     save_config_json(&config);
 
     config
-
 }
 
 pub fn load_config() -> Config {
-    let json_config = fs::read_to_string("./data/user_config.json").expect("");
-
-    serde_json::from_str(&json_config).expect("Fehler beim Parsen der JSON")
+    match fs::read_to_string(
+        dirs::config_local_dir()
+            .unwrap()
+            .join("hawhhcalendarbot/cfg.json"),
+    ) {
+        Ok(json_config) => serde_json::from_str(&json_config).expect("Fehler beim Parsen der JSON"),
+        Err(_) => Config::new(),
+    }
 }
 
 pub fn save_config_json(user_config: &Config) {
+    let conf_dir = dirs::config_local_dir().unwrap().join("hawhhcalendarbot");
+
     let json_string = serde_json::to_string_pretty(user_config).expect("Fehler beim Serialisieren");
-    fs::write("./data/user_config.json", json_string).expect("Fehler beim Schreiben der Datei");
+    let _ = fs::create_dir_all(conf_dir);
+
+    fs::write(
+        dirs::config_local_dir()
+            .unwrap()
+            .join("hawhhcalendarbot/cfg.json"),
+        json_string,
+    )
+    .expect("Fehler beim Schreiben der Datei");
 }
 
 pub fn add_mensa(mensa: String) {
@@ -119,7 +144,6 @@ pub fn set_primary_mensa(primary_mensa: String) {
     save_config_json(&conf);
 }
 
-
 #[cfg(test)]
 mod tests {
     // Note this useful idiom: importing names from outer (for mod tests) scope.
@@ -135,5 +159,11 @@ mod tests {
         add_mensa("mensa".to_string());
         add_mensa("mensa2".to_string());
         add_mensa("3".to_string());
+    }
+
+    #[test]
+    fn test_new_config() {
+        let conf = Config::new();
+        save_config_json(&conf);
     }
 }
