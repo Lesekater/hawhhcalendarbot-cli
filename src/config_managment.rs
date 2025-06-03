@@ -44,9 +44,15 @@ fn struct_to_json(save_path: String, config: Config)/*  -> Result<()> */{}
 fn string_seperation(input_string: String) {
 
     //let chars_to_trimm: &char = &[' '];
-    let trimmed_str = input_string.trim_matches(' ');
-    let trimmed_str_new = trimmed_str.trim_matches('\n');
-    print!("{:?}\n", trimmed_str_new);
+    let trimmed_str: Vec<&str> = input_string.split('\n').collect();
+
+    let mut clean_str: Vec<&str> = Vec::new();
+
+    
+
+    println!("{:?}", trimmed_str);
+
+    //print!("{:?}\n", trimmed_str);
     //let primary_mensa = trimmed_str.trim_start()
 }
 
