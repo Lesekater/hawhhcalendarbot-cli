@@ -55,7 +55,7 @@ fn struct_to_json(save_path: String, config: Config) /*  -> Result<()> */ {}
 
 fn string_seperation(input_string: String) {
     //let chars_to_trimm: &char = &[' '];
-    let trimmed_str: Vec<&str> = input_string.split('\n').collect();
+    let trimmed_str: Vec<&str> = input_string.split(' ').collect();
 
     let mut clean_str: Vec<&str> = Vec::new();
 
