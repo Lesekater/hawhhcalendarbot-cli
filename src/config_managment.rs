@@ -1,3 +1,4 @@
+use clap::builder::Str;
 use serde::{Deserialize, Serialize};
 use serde_json;
 use std::fs;
@@ -31,28 +32,49 @@ struct Config {
     extras: Option<Vec<Extras>>,
 }
 
-
 //Funktionen für Custom Json Parser:
-fn json_to_struct(load_path: String) -> Result<Config, Box<dyn Error>>{}
+fn json_to_struct(load_path: String)/* -> Result<Config, Box<dyn Error>> */{
+    let json_file = fs::read_to_string(load_path);
+    //print!("{:?}", json_file);
+    string_seperation(json_file.unwrap());
+}
 
-fn struct_to_json(save_path: String, config: Config) -> Result<()> {}
+fn struct_to_json(save_path: String, config: Config)/*  -> Result<()> */{}
 
+fn string_seperation(input_string: String) {
+
+    //let chars_to_trimm: &char = &[' '];
+    let trimmed_str = input_string.trim_matches(' ');
+    let trimmed_str_new = trimmed_str.trim_matches('\n');
+    print!("{:?}\n", trimmed_str_new);
+    //let primary_mensa = trimmed_str.trim_start()
+}
 
 //Funktionen für das Config Managment:
 pub fn new_config() -> Config {
+    let extra_vec = vec![Extras::Vegan, Extras::LactoseFree];
+    let config = Config{
+        primary_mensa: Some("Berliner Tor".to_string()),
+        mensa_list: None,
+        occupation: Some(Occupations::Student),
+        extras: Some(extra_vec),
+    };
 
+    save_config_json(&config);
+
+    config
 
 }
 
 pub fn load_config() -> Config {
-    let json_config = fs::read_to_string("../data/user_config.json").expect("");
+    let json_config = fs::read_to_string("./data/user_config.json").expect("");
 
     serde_json::from_str(&json_config).expect("Fehler beim Parsen der JSON")
 }
 
 pub fn save_config_json(user_config: &Config) {
     let json_string = serde_json::to_string_pretty(user_config).expect("Fehler beim Serialisieren");
-    fs::write("config.json", json_string).expect("Fehler beim Schreiben der Datei");
+    fs::write("./data/user_config.json", json_string).expect("Fehler beim Schreiben der Datei");
 }
 
 pub fn add_mensa(mensa: String) {
@@ -95,4 +117,23 @@ pub fn set_primary_mensa(primary_mensa: String) {
     let mut conf = load_config();
     conf.primary_mensa = Some(primary_mensa);
     save_config_json(&conf);
+}
+
+
+#[cfg(test)]
+mod tests {
+    // Note this useful idiom: importing names from outer (for mod tests) scope.
+    use super::*;
+
+    #[test]
+    fn create_config() {
+        let user_config = new_config();
+        json_to_struct("./data/user_config.json".to_string());
+
+        let extra_vec = vec![Extras::Vegan, Extras::LactoseFree];
+        set_extras(extra_vec);
+        add_mensa("mensa".to_string());
+        add_mensa("mensa2".to_string());
+        add_mensa("3".to_string());
+    }
 }
