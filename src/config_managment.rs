@@ -1,6 +1,7 @@
 use serde::{Deserialize, Serialize};
 use serde_json;
 use std::fs;
+use std::error::Error;
 
 //enum of possibel extras to choose from:
 #[derive(Serialize, Deserialize, PartialEq)]
@@ -30,7 +31,18 @@ struct Config {
     extras: Option<Vec<Extras>>,
 }
 
-pub fn new_config() -> Config {}
+
+//Funktionen für Custom Json Parser:
+fn json_to_struct(load_path: String) -> Result<Config, Box<dyn Error>>{}
+
+fn struct_to_json(save_path: String, config: Config) -> Result<()> {}
+
+
+//Funktionen für das Config Managment:
+pub fn new_config() -> Config {
+
+
+}
 
 pub fn load_config() -> Config {
     let json_config = fs::read_to_string("../data/user_config.json").expect("");
