@@ -125,6 +125,8 @@ pub mod mensa_data {
         // Clone the mensa data repository
         let output = Command::new("git")
             .arg("clone")
+            .arg("--depth")
+            .arg("1")
             .arg("https://github.com/HAWHHCalendarBot/mensa-data.git")
             .arg("./data/mensadata/")
             .output()?;        
