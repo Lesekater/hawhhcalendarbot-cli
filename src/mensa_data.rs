@@ -5,6 +5,7 @@ pub mod mensa_data {
     use std::process::Command;
     use std::fs::File;
     use std::io::prelude::*;
+    use dirs::cache_dir;
     use reqwest::blocking as reqwest;
 
     use crate::meal::Meal;
@@ -14,17 +15,12 @@ pub mod mensa_data {
     ///////////////////////////////////////////////////////////////////////////
 
     pub fn load_local_data(date: chrono::NaiveDate, mensa_name: &str) -> Result<Vec<Meal>, Box<dyn Error>> {
-        // Check locally if the data is available
-        let path = Path::new("./data/mensadata/");
-        
-        // If the path does not exist, return an error
-        if !path.exists() {
-            return Err(format!("Local mensa data not available at {:?}", path).into());
-        }
-        
-        // Read timestamp
-        let mut file: File = File::open("./data/mensadata/timestamp")?;
+        // Read timestamp of local mensa data
+        let cache_dir = get_cache_dir()?;
+        let cache_dir_str = cache_dir.to_str().ok_or("Cache directory path is not valid")?;
+        let mut file: File = File::open(format!("{}/mensadata/timestamp", &cache_dir_str))?;
         let mut contents = String::new();
+        
         file.read_to_string(&mut contents)?;
         let last_change = chrono::DateTime::from_timestamp(contents.parse()?, 0).unwrap();
         let last_change_date = last_change.date_naive();
@@ -36,15 +32,20 @@ pub mod mensa_data {
         }
 
         // Load new data
-        let path_str = format!("./data/mensadata/{}/{}/{}/{}.json",
+        let mensadata_path = get_mensadata_dir()?;
+
+        if !mensadata_path.exists() {
+            return Err(format!("Local mensa data not available at {:?}", mensadata_path).into());
+        }
+        
+        let path_str = format!("./{}/{}/{}/{}.json",
             &mensa_name,
             &date.format("%Y").to_string(),
             &date.format("%m").to_string(),
             &date.format("%d").to_string()
         );
-        let path = Path::new(&path_str);
+        let path = Path::join(&mensadata_path, Path::new(&path_str));
 
-        // If the path does not exist, return an error
         if !path.exists() {
             return Err(format!("No data found for mensa '{}' on date '{}'", &mensa_name, date).into());
         }
@@ -83,17 +84,21 @@ pub mod mensa_data {
     }
 
     /// Fetches Mensadata and stores it in the cache dir
+    /// Fetch Mensa data from git repo (https://github.com/HAWHHCalendarBot/mensa-data.git) and save it locally
     pub fn fetch_mensa_data() -> Result<(), Box<dyn Error>> {
-        // Fetch Mensa data from git repo (https://github.com/HAWHHCalendarBot/mensa-data.git) and save it locally
+        // Check locally if the data is available
+        let mensadata_path = get_mensadata_dir()?;
 
         // Create the mensa data directory if it doesn't exist
-        if !Path::new("./data/mensadata/").exists() {
-            fs::create_dir_all("./data/mensadata/")?;
+        if !mensadata_path.exists() {
+            fs::create_dir_all(&mensadata_path)?;
         } else {
             // If the directory already exists, remove it to ensure a fresh clone
-            fs::remove_dir_all("./data/mensadata/")?;
-            fs::create_dir_all("./data/mensadata/")?;
+            fs::remove_dir_all(&mensadata_path)?;
+            fs::create_dir_all(&mensadata_path)?;
         }
+
+        print!("fetching into: {:?}", &mensadata_path);
 
         // Clone the mensa data repository
         let output = Command::new("git")
@@ -101,7 +106,7 @@ pub mod mensa_data {
             .arg("--depth")
             .arg("1")
             .arg("https://github.com/HAWHHCalendarBot/mensa-data.git")
-            .arg("./data/mensadata/")
+            .arg(&mensadata_path)
             .output()?;        
 
         if output.status.success() {
@@ -109,7 +114,7 @@ pub mod mensa_data {
             println!("Mensa data cloned successfully.");
 
             // Refresh Timestamp
-            let mut file = File::create("./data/mensadata/timestamp")?;
+            let mut file = File::create(Path::join(&mensadata_path, "./timestamp"))?;
             file.write_all(&chrono::Local::now().timestamp().to_string().into_bytes()).expect("couldnt write timestamp");
 
             Ok(())
@@ -117,5 +122,25 @@ pub mod mensa_data {
             let error_message = String::from_utf8_lossy(&output.stderr);
             return Err(format!("Failed to clone mensa data: {}", error_message).into());
         }
+    }
+
+    ///////////////////////////////////////////////////////////////////////////
+    ///////////                      Util
+    ///////////////////////////////////////////////////////////////////////////
+    
+    fn get_cache_dir() -> Result<std::path::PathBuf, Box<dyn Error>> {
+        let cache_dir = cache_dir().ok_or("Could not find cache directory")?;
+        Ok(cache_dir.join(env!("CARGO_PKG_NAME")))
+    }
+
+    fn get_mensadata_dir() -> Result<std::path::PathBuf, Box<dyn Error>> {
+        let cache_dir = get_cache_dir().expect("Could not find cache directory");
+        let mensadata_path = cache_dir.join("mensadata");
+
+        if !mensadata_path.exists() {
+            fs::create_dir_all(&mensadata_path).expect("Could not create mensa data directory");
+        }
+
+        Ok(mensadata_path)
     }
 }
