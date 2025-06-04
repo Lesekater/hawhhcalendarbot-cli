@@ -3,22 +3,22 @@ pub mod mensa_data {
     use std::path::Path;
     use std::error::Error;
     use std::process::Command;
-    use std::collections::HashMap;
     use std::fs::File;
     use std::io::prelude::*;
+    use reqwest::blocking as reqwest;
 
     use crate::meal::Meal;
 
-    /// Represents the mensa data
-    /// <mensa-name>/<year>/<month>/<day>.json
-    pub type MensaData = HashMap<String, HashMap<String, HashMap<String, HashMap<String, Vec<Meal>>>>>;
+    ///////////////////////////////////////////////////////////////////////////
+    ///////////                 Local Loading
+    ///////////////////////////////////////////////////////////////////////////
 
-    pub fn load_local_data() -> Result<MensaData, Box<dyn Error>> {
+    pub fn load_local_data(date: chrono::NaiveDate, mensa_name: &str) -> Result<Vec<Meal>, Box<dyn Error>> {
         // Check locally if the data is available
         let path = Path::new("./data/mensadata/");
         
+        // If the path does not exist, return an error
         if !path.exists() {
-            // If the path does not exist, return an error
             return Err(format!("Local mensa data not available at {:?}", path).into());
         }
         
@@ -35,81 +35,54 @@ pub mod mensa_data {
             fetch_mensa_data()?;
         }
 
-        // Read data
-        let mut data: MensaData = HashMap::new();
+        // Load new data
+        let path_str = format!("./data/mensadata/{}/{}/{}/{}.json",
+            &mensa_name,
+            &date.format("%Y").to_string(),
+            &date.format("%m").to_string(),
+            &date.format("%d").to_string()
+        );
+        let path = Path::new(&path_str);
 
-        for entry in fs::read_dir(path)? {
-            let entry = entry?;
-
-            // If the entry is not a directory, skip it
-            if !entry.path().is_dir() || entry.path().file_name().unwrap() == "mensas" || entry.path().file_name().unwrap() == ".git" {
-                continue;
-            }
-
-            let mensa_name = entry.file_name().into_string().unwrap();
-            let mensa_path = entry.path();
-
-            let mut folder_to_process = vec![mensa_path.clone()];
-
-            while let Some(folder) = folder_to_process.pop() {
-                // Read the contents of the current directory
-                for entry in fs::read_dir(&folder)? {
-                    let entry = entry?;
-
-                    // If the entry is a directory, add it to the list of folders to process
-                    if entry.path().is_dir() {
-                        folder_to_process.push(entry.path());
-                    }
-                    // If the entry is a JSON file, read it and add it to the data
-                    else if entry.path().extension().and_then(|s| s.to_str()) == Some("json") {
-                        let entry_path = entry.path();
-                        let file_path = entry_path.to_str().ok_or_else(|| format!("Invalid file path - entry: {:?}", entry_path))?;
-                        let file_content = fs::read_to_string(&entry_path)?;
-                        let parts = file_path
-                            .strip_suffix(".json")
-                            .unwrap()
-                            .split('/')
-                            .rev()
-                            .take(3)
-                            .collect::<Vec<&str>>();
-                        if parts.len() != 3 {
-                            panic!("Invalid file path - expected format: <mensa-name>/<year>/<month>/<day>.json, got: {}", file_path);
-                        }
-                        let day = parts[0].to_string();
-                        let month = parts[1].to_string();
-                        let year = parts[2].to_string();
-
-                        // Insert or use existing nested maps to avoid overwriting existing data
-                        let mensa_entry = data.entry(mensa_name.clone()).or_insert_with(HashMap::new);
-                        let year_entry = mensa_entry.entry(year.clone()).or_insert_with(HashMap::new);
-                        let month_entry = year_entry.entry(month.clone()).or_insert_with(HashMap::new);
-                        
-                        // Build entry for the day
-                        let entry = serde_json::from_str::<Vec<Meal>>(&file_content)
-                            .map_err(|e| format!("Failed to parse JSON for {}: {}", file_path, e))?;
-
-                        month_entry.insert(day, entry);
-                    }
-                }
-            }
+        // If the path does not exist, return an error
+        if !path.exists() {
+            return Err(format!("No data found for mensa '{}' on date '{}'", &mensa_name, date).into());
         }
 
-        // Return the mensa data
-        Ok(data)
+        // Read data
+        let file_content = fs::read_to_string(&path)?;
+        
+        Ok(serde_json::from_str(&file_content)?)
     }
 
-    pub fn get_food_for_date<'a>(data: &'a MensaData, date: chrono::NaiveDate, mensa_name: &str) -> Result<Vec<&'a Meal>, Box<dyn Error>> {
-        Ok(
-            data.get(mensa_name)
-                .and_then(|mensa| mensa.get(&date.format("%Y").to_string()))
-                .and_then(|year| year.get(&date.format("%m").to_string()))
-                .and_then(|month| month.get(&date.format("%d").to_string()))
-                .ok_or_else(|| "No data found for the given date")?
-                .iter()
-                .collect::<Vec<&Meal>>(),
-        )
+    pub fn get_food_for_date(date: chrono::NaiveDate, mensa_name: &str) -> Result<Vec<Meal>, Box<dyn Error>> {
+
+        // Check if the mensa data is available locally
+        // -> if so, load it
+        // -> else load for single date directly
+        load_local_data(date, mensa_name).or_else(|_| fetch_data_for_date(date, mensa_name))
     }
 
+    ///////////////////////////////////////////////////////////////////////////
+    ///////////                 Fetching Mensa Data   
+    ///////////////////////////////////////////////////////////////////////////
+
+    /// Fetches data for a single date
+    pub fn fetch_data_for_date(date: chrono::NaiveDate, mensa_name: &str) -> Result<Vec<Meal>, Box<dyn Error>> {
+        // https://raw.githubusercontent.com/HAWHHCalendarBot/mensa-data/refs/heads/main/Caf%C3%A9%20Mittelweg/2022/02/02.json
+        let url = format!("https://raw.githubusercontent.com/HAWHHCalendarBot/mensa-data/refs/heads/main/{}/{}/{}/{}.json",
+            &mensa_name,
+            &date.format("%Y"),
+            &date.format("%m"),
+            &date.format("%d")
+        );
+
+        let data = reqwest::get(url)?.text()?;
+
+        return Ok(serde_json::from_str(&data)?);
+    }
+
+    /// Fetches Mensadata and stores it in the cache dir
     pub fn fetch_mensa_data() -> Result<(), Box<dyn Error>> {
         // Fetch Mensa data from git repo (https://github.com/HAWHHCalendarBot/mensa-data.git) and save it locally
 

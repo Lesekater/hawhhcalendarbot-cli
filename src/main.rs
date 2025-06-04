@@ -75,9 +75,12 @@ enum MensaCommands {
         /// The date to show the mensa menu for
         date: String,
     },
-    /// Force update of the mensa data
+    /// Force full update of the mensa data
     #[clap(alias = "u")]
     Update,
+    /// Force full cache load of the mensa data
+    #[clap(alias = "c")]
+    Cache,
     /// Shows the mensa settings
     #[clap(alias = "s")]
     Settings {
