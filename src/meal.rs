@@ -5,6 +5,8 @@ use serde::{Deserialize, Serialize};
 use std::fmt;
 use regex::Regex;
 
+use crate::config_managment::Occupations;
+
 #[derive(Debug, Hash, PartialEq, Eq)]
 pub struct Meta {
     pub canteen: String,
@@ -34,10 +36,18 @@ impl fmt::Display for Meal {
         let re = Regex::new(r"\s*\((?:[^(),]*,[^()]*|\w+)\)\s*").unwrap();
         let filtered_name = re.replace_all(&self.name, "").trim().to_string();
 
+        let config = crate::config_managment::load_config();
+        let price = match config.occupation() {
+            Some(Occupations::Student) => self.prices.price_student,
+            Some(Occupations::Employee) => self.prices.price_attendant,
+            Some(Occupations::Guest) => self.prices.price_guest,
+            _ => self.prices.price_student, // Default to student price if occupation is unknown
+        };
+
         write!(
             f,
             "{}\n{}€ [{}]",
-            filtered_name, self.prices.price_student, self.contents
+            filtered_name, price, self.contents
         )
     }
 }

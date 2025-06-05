@@ -18,7 +18,7 @@ enum Extras {
 
 //enum of possibel occupations
 #[derive(Serialize, Deserialize)]
-enum Occupations {
+pub enum Occupations {
     Student,
     Employee,
     Guest,
