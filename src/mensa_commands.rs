@@ -1,4 +1,4 @@
-use crate::{Cli, MensaCommands, SettingsCommands, config_managment::load_config, mensa_data::*};
+use crate::{config_managment::{load_config, Extras}, meal::Meal, mensa_data::*, Cli, MensaCommands, SettingsCommands};
 
 pub fn match_mensa_commands(
     command: &Option<MensaCommands>,
@@ -156,6 +156,14 @@ fn date_command(command: &Option<MensaCommands>, currentdate: chrono::NaiveDate,
 
     // output formatted date and food items
     println!("{}\n{}", mensa_name, date_to_use.format("%Y-%m-%d"));
+
+    // Filter food items based on extras
+    let food_for_date = match config.extras() {
+        Some(extras) => filter_food_by_extras(food_for_date, extras),
+        None => food_for_date,
+    };
+
+    // Print each food item
     for food in food_for_date {
         println!("\n{}", food);
     }
@@ -169,4 +177,45 @@ fn date_command(command: &Option<MensaCommands>, currentdate: chrono::NaiveDate,
     } else {
         println!("\nNo additional mensas configured.");
     }
+}
+
+pub fn filter_food_by_extras(
+    mut food: Vec<Meal>,
+    extras: &Vec<Extras>,
+) -> Vec<Meal> {
+    food.retain(|meal| {
+        filter_food_by_extras_single(meal, extras)
+    });
+
+    food
+}
+
+pub fn filter_food_by_extras_single(
+    food: &Meal,
+    extras: &Vec<Extras>,
+) -> bool {
+    if extras.is_empty() {
+        return true; // If no extras are specified, keep the food item
+    }
+    
+    // Check if the food item has any of the specified extras
+    for extra in extras {
+        let contains = food.contents.to_string().contains(&extra.to_string());
+        match extra {
+            // POSITIVE EXTRAS
+            Extras::Vegan | Extras::Vegetarisch | Extras::LactoseFree | Extras::AlcoholFree => {
+                if !contains {
+                    return false; // If the food does not contain the extra, skip it
+                }
+            }
+            // NEGATIVE EXTRAS
+            _ => {
+                if contains {
+                    return false; // If the food contains a negative extra, skip it
+                }
+            }
+        }
+    }
+
+    true // Keep the food item if it passes all checks
 }

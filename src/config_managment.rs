@@ -3,17 +3,40 @@ use serde::{Deserialize, Serialize};
 use serde_json;
 use std::error::Error;
 use std::fs;
+use std::fmt;
 use getset::{Getters};
 
 //enum of possibel extras to choose from:
-#[derive(Serialize, Deserialize, PartialEq)]
-enum Extras {
+#[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
+pub(crate) enum Extras {
     Vegan,
     Vegetarisch,
     LactoseFree,
     AlcoholFree,
     BeefFree,
     FishFree,
+    GelatineFree,
+    LambFree,
+    PigFree,
+    PoultryFree,
+}
+
+impl fmt::Display for Extras {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let s = match self {
+            Extras::Vegan => "Vegan",
+            Extras::Vegetarisch => "Vegetarian",
+            Extras::LactoseFree => "Lactose Free",
+            Extras::AlcoholFree => "Alcohol",
+            Extras::BeefFree => "Beef",
+            Extras::FishFree => "Fish",
+            Extras::GelatineFree => "Gelatine",
+            Extras::LambFree => "Lamb",
+            Extras::PigFree => "Pig",
+            Extras::PoultryFree => "Poultry",
+        };
+        write!(f, "{}", s)
+    }
 }
 
 //enum of possibel occupations
