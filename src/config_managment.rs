@@ -3,6 +3,7 @@ use serde::{Deserialize, Serialize};
 use serde_json;
 use std::error::Error;
 use std::fs;
+use getset::{Getters};
 
 //enum of possibel extras to choose from:
 #[derive(Serialize, Deserialize, PartialEq)]
@@ -24,8 +25,9 @@ enum Occupations {
 }
 
 //Struct of the Cofig to load form the JSON File
-#[derive(Serialize, Deserialize)]
-struct Config {
+#[derive(Getters, Serialize, Deserialize)]
+#[getset(get = "pub")]
+pub struct Config {
     primary_mensa: Option<String>,
     mensa_list: Option<Vec<String>>,
     occupation: Option<Occupations>,

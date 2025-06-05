@@ -5,7 +5,7 @@ mod tests {
 
     use chrono::NaiveDate;
 
-    use crate::mensa_data::mensa_data::load_local_data;
+    use crate::mensa_data::load_local_data;
     use crate::meal::{Meal, Prices, Contents};
 
     #[test]

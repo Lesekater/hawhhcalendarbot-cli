@@ -1,33 +1,31 @@
 use crate::{
-    Cli, MensaCommands, SettingsCommands,
-    mensa_data::{
-        self,
-        mensa_data::fetch_mensa_data,
-    },
+    config_managment::load_config, 
+    mensa_data::*,
+    Cli, 
+    MensaCommands, 
+    SettingsCommands
 };
-
-const MENSA_NAME: &str = "Mensa Berliner Tor";
 
 pub fn match_mensa_commands(
     command: &Option<MensaCommands>,
     currentdate: chrono::NaiveDate,
     cli: &Cli,
 ) {
-    // let local_data = match mensa_data::mensa_data::load_local_data() {
+    // let local_data = match mensa_data::load_local_data() {
     //     Ok(data) => data,
     //     Err(e) => {
     //         println!("Local data not available: {}", e);
     //         println!("Attempting to fetch data from the server...");
 
     //         // Attempt to fetch the data if not available locally
-    //         if mensa_data::mensa_data::fetch_mensa_data().is_err() {
+    //         if mensa_data::fetch_mensa_data().is_err() {
     //             println!("Error fetching mensa data: {}", e);
     //             std::process::exit(1);
     //         }
 
     //         println!("Data fetched successfully.\n");
 
-    //         mensa_data::mensa_data::load_local_data().unwrap()
+    //         mensa_data::load_local_data().unwrap()
     //     }
     // };
 
@@ -101,12 +99,22 @@ fn date_command(
         _ => panic!("Unexpected command variant"),
     };
 
+    // Load Config
+    let config = load_config();
+    let mensa_name = match config.primary_mensa() {
+        Some(name) => name,
+        None => {
+            println!("Primary Mensa is not set - please set it in the config");
+            return;
+        }
+    };
+
     // Find the food for the specified date
     let food_for_date =
-        match mensa_data::mensa_data::get_food_for_date(date_to_use, MENSA_NAME) {
+        match get_food_for_date(date_to_use, mensa_name) {
             Ok(food) => food,
             Err(e) => {
-                println!("Error fetching food for date: {}", e);
+                println!("Error fetching food for mensa '{}' on date '{}': {}", mensa_name, date_to_use, e);
                 return;
             }
         };
@@ -118,7 +126,7 @@ fn date_command(
     }
 
     // output formatted date and food items
-    println!("{}\n{}", MENSA_NAME, date_to_use.format("%Y-%m-%d"));
+    println!("{}\n{}", mensa_name, date_to_use.format("%Y-%m-%d"));
     for food in food_for_date {
         println!("\n{}", food);
     }
