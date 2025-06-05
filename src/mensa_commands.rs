@@ -169,13 +169,12 @@ fn date_command(command: &Option<MensaCommands>, currentdate: chrono::NaiveDate,
     }
 
     // Show options for additional mensas
-    if let Some(additional_mensas) = config.mensa_list() {
+    if config.mensa_list().is_some() && !config.mensa_list().as_ref().unwrap().is_empty() {
+        let additional_mensas = config.mensa_list().as_ref().unwrap();
         print!("\n---------\n\nAdditional Mensas (use argument --number <index> to select):\n");
         for (i, mensa) in additional_mensas.iter().enumerate() {
             print!("- {}: {}\n", i + 1, mensa);
         }
-    } else {
-        println!("\nNo additional mensas configured.");
     }
 }
 
