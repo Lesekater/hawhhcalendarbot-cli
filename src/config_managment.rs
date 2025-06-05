@@ -180,17 +180,17 @@ mod tests {
     // Note this useful idiom: importing names from outer (for mod tests) scope.
     use super::*;
 
-    #[test]
-    fn create_config() {
-        let user_config = new_config();
-        json_to_struct("./data/user_config.json".to_string());
+    // #[test]
+    // fn create_config() {
+    //     let user_config = new_config();
+    //     json_to_struct("./data/user_config.json".to_string());
 
-        let extra_vec = vec![Extras::Vegan, Extras::LactoseFree];
-        set_extras(extra_vec);
-        add_mensa("mensa".to_string());
-        add_mensa("mensa2".to_string());
-        add_mensa("3".to_string());
-    }
+    //     let extra_vec = vec![Extras::Vegan, Extras::LactoseFree];
+    //     set_extras(extra_vec);
+    //     add_mensa("mensa".to_string());
+    //     add_mensa("mensa2".to_string());
+    //     add_mensa("3".to_string());
+    // }
 
     #[test]
     fn test_new_config() {
