@@ -96,7 +96,7 @@ fn string_seperation(input_string: String) {
 pub fn new_config() -> Config {
     let extra_vec = vec![Extras::Vegan, Extras::LactoseFree];
     let config = Config {
-        primary_mensa: Some("Berliner Tor".to_string()),
+        primary_mensa: Some("Mensa Berliner Tor".to_string()),
         mensa_list: None,
         occupation: Some(Occupations::Student),
         extras: Some(extra_vec),
