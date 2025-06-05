@@ -32,7 +32,8 @@ pub fn match_mensa_commands(
         }
         Some(MensaCommands::Update) | Some(MensaCommands::Cache) => {
             println!("Updating mensa data...");
-            match fetch_mensa_data() {
+            let cache_dir = dirs::cache_dir().expect("Could not find cache directory");
+            match fetch_mensa_data(&cache_dir) {
                 Ok(_) => println!("Mensa data updated successfully."),
                 Err(e) => println!("Error updating mensa data: {}", e),
             };

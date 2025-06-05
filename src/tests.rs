@@ -2,6 +2,9 @@
 mod tests {
 
     use std::collections::BTreeMap;
+    use std::fs::File;
+    use std::io::Write;
+    use std::path::{Path, PathBuf};
 
     use chrono::NaiveDate;
 
@@ -12,6 +15,7 @@ mod tests {
 
     #[test]
     fn test_load_local_data() {
+        // arrange
         let test_meal = Meal {
             name: "Testgericht".to_string(),
             date: NaiveDate::from_ymd_opt(2025, 6, 1).unwrap(),
@@ -37,11 +41,21 @@ mod tests {
             },
         };
 
-        let result = load_local_data(NaiveDate::from_ymd_opt(2025, 6, 1).unwrap(), "TestMensa");
+        let test_path = PathBuf::from("./test_data");
 
+        let mut file = File::create(test_path.join("mensadata/timestamp")).unwrap();
+        file.write_all(&chrono::Local::now().timestamp().to_string().into_bytes()).expect("couldnt write timestamp");
+
+        // act
+        let result = load_local_data(NaiveDate::from_ymd_opt(2025, 6, 1).unwrap(), "TestMensa", test_path.clone());
+
+        // assert
         assert!(result.is_ok(), "Failed to load local data: {:?}", result.err());
         let data = result.unwrap();
         assert_eq!(data, vec![test_meal], "Loaded data does not match expected data");
+
+        // Clean up
+        let _ = std::fs::remove_file(test_path.join("mensadata/timestamp"));
     }
 
     #[test]

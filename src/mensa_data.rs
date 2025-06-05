@@ -1,5 +1,5 @@
 use std::fs;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::error::Error;
 use std::process::Command;
 use std::fs::File;
@@ -13,9 +13,8 @@ use crate::meal::Meal;
 ///////////                 Local Loading
 ///////////////////////////////////////////////////////////////////////////
 
-pub fn load_local_data(date: chrono::NaiveDate, mensa_name: &str) -> Result<Vec<Meal>, Box<dyn Error>> {
+pub fn load_local_data(date: chrono::NaiveDate, mensa_name: &str, cache_dir: PathBuf) -> Result<Vec<Meal>, Box<dyn Error>> {
     // Read timestamp of local mensa data
-    let cache_dir = get_cache_dir()?;
     let cache_dir_str = cache_dir.to_str().ok_or("Cache directory path is not valid")?;
     let mut file: File = File::open(format!("{}/mensadata/timestamp", &cache_dir_str))?;
     let mut contents = String::new();
@@ -27,11 +26,11 @@ pub fn load_local_data(date: chrono::NaiveDate, mensa_name: &str) -> Result<Vec<
     // If the data is older than 1 day, fetch new data
     if chrono::Local::now().date_naive().signed_duration_since(last_change_date) > chrono::Duration::days(1) {
         println!("Local mensa data is outdated. Fetching new data...");
-        fetch_mensa_data()?;
+        fetch_mensa_data(&cache_dir)?;
     }
 
     // Load new data
-    let mensadata_path = get_mensadata_dir()?;
+    let mensadata_path = get_mensadata_dir(&cache_dir)?;
 
     if !mensadata_path.exists() {
         return Err(format!("Local mensa data not available at {:?}", mensadata_path).into());
@@ -60,7 +59,8 @@ pub fn get_food_for_date(date: chrono::NaiveDate, mensa_name: &str) -> Result<Ve
     // Check if the mensa data is available locally
     // -> if so, load it
     // -> else load for single date directly
-    load_local_data(date, mensa_name).or_else(|_| fetch_data_for_date(date, mensa_name))
+    let cache_dir = get_cache_dir()?;
+    load_local_data(date, mensa_name, cache_dir).or_else(|_| fetch_data_for_date(date, mensa_name))
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -88,9 +88,9 @@ pub fn fetch_data_for_date(date: chrono::NaiveDate, mensa_name: &str) -> Result<
 
 /// Fetches Mensadata and stores it in the cache dir
 /// Fetch Mensa data from git repo (https://github.com/HAWHHCalendarBot/mensa-data.git) and save it locally
-pub fn fetch_mensa_data() -> Result<(), Box<dyn Error>> {
+pub fn fetch_mensa_data(cache_dir: &PathBuf) -> Result<(), Box<dyn Error>> {
     // Check locally if the data is available
-    let mensadata_path = get_mensadata_dir()?;
+    let mensadata_path = get_mensadata_dir(&cache_dir)?;
 
     // Create the mensa data directory if it doesn't exist
     if !mensadata_path.exists() {
@@ -136,8 +136,7 @@ fn get_cache_dir() -> Result<std::path::PathBuf, Box<dyn Error>> {
     Ok(cache_dir.join(env!("CARGO_PKG_NAME")))
 }
 
-fn get_mensadata_dir() -> Result<std::path::PathBuf, Box<dyn Error>> {
-    let cache_dir = get_cache_dir().expect("Could not find cache directory");
+fn get_mensadata_dir(cache_dir: &PathBuf) -> Result<std::path::PathBuf, Box<dyn Error>> {
     let mensadata_path = cache_dir.join("mensadata");
 
     if !mensadata_path.exists() {
