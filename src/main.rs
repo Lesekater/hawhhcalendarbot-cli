@@ -53,6 +53,9 @@ enum Commands {
     Mensa {
         #[clap(subcommand)]
         command: Option<MensaCommands>,
+
+        #[arg(short, long)]
+        number: Option<i32>,
     },
     /// Shows the selected events
     Events {
@@ -65,15 +68,24 @@ enum Commands {
 enum MensaCommands {
     /// Shows the mensa menu for today
     #[clap(alias = "tod")]
-    Today,
+    Today {
+        #[arg(short, long)]
+        number: Option<i32>,
+    },
     /// Shows the mensa menu for tomorrow
     #[clap(alias = "tom")]
-    Tomorrow,
+    Tomorrow {
+        #[arg(short, long)]
+        number: Option<i32>,
+    },
     /// Shows the mensa menu for the given date
     #[clap(alias = "d")]
     Date {
         /// The date to show the mensa menu for
         date: String,
+
+        #[arg(short, long)]
+        number: Option<i32>,
     },
     /// Force full update of the mensa data
     #[clap(alias = "u")]
@@ -126,8 +138,8 @@ fn main() {
     let currentdate = chrono::Local::now().date_naive();
 
     match &cli.command {
-        Commands::Mensa { command } => {
-            match_mensa_commands(command, currentdate, &cli);
+        Commands::Mensa { command , number } => {
+            match_mensa_commands(command, currentdate, &cli, number);
         }
         Commands::Events { event: _ } => {}
     }

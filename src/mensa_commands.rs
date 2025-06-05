@@ -1,15 +1,10 @@
-use crate::{
-    config_managment::load_config, 
-    mensa_data::*,
-    Cli, 
-    MensaCommands, 
-    SettingsCommands
-};
+use crate::{Cli, MensaCommands, SettingsCommands, config_managment::load_config, mensa_data::*};
 
 pub fn match_mensa_commands(
     command: &Option<MensaCommands>,
     currentdate: chrono::NaiveDate,
     cli: &Cli,
+    number: &Option<i32>,
 ) {
     // let local_data = match mensa_data::load_local_data() {
     //     Ok(data) => data,
@@ -30,8 +25,8 @@ pub fn match_mensa_commands(
     // };
 
     match &command {
-        Some(MensaCommands::Today)
-        | Some(MensaCommands::Tomorrow)
+        Some(MensaCommands::Today { .. })
+        | Some(MensaCommands::Tomorrow { .. })
         | Some(MensaCommands::Date { .. }) => {
             date_command(&command, currentdate, &cli);
         }
@@ -71,23 +66,19 @@ pub fn match_mensa_commands(
             }
         }
         None => {
-            date_command(&Some(MensaCommands::Today), currentdate, &cli);
+            date_command(&Some(MensaCommands::Today { number: *number }), currentdate, &cli);
         }
     }
 }
 
-fn date_command(
-    command: &Option<MensaCommands>,
-    currentdate: chrono::NaiveDate,
-    cli: &Cli,
-) {
+fn date_command(command: &Option<MensaCommands>, currentdate: chrono::NaiveDate, cli: &Cli) {
     // Determine the date to use based on the command
     let date_to_use = match &command {
-        Some(MensaCommands::Today) => currentdate,
-        Some(MensaCommands::Tomorrow) => currentdate
+        Some(MensaCommands::Today { .. }) => currentdate,
+        Some(MensaCommands::Tomorrow { .. }) => currentdate
             .succ_opt()
             .expect("Failed to get tomorrow's date"),
-        Some(MensaCommands::Date { date }) => {
+        Some(MensaCommands::Date { date, .. }) => {
             match chrono::NaiveDate::parse_from_str(date, "%d.%m.%Y") {
                 Ok(parsed_date) => parsed_date,
                 Err(_) => {
@@ -99,25 +90,63 @@ fn date_command(
         _ => panic!("Unexpected command variant"),
     };
 
-    // Load Config
-    let config = load_config();
-    let mensa_name = match config.primary_mensa() {
-        Some(name) => name,
-        None => {
-            println!("Primary Mensa is not set - please set it in the config");
-            return;
-        }
+    // Additional Mensa to use if specified
+    let additional_mensa: &Option<i32> = match command {
+        Some(MensaCommands::Today { number }) => number,
+        Some(MensaCommands::Tomorrow { number }) => number,
+        Some(MensaCommands::Date { number, .. }) => number,
+        _ => &None,
     };
 
-    // Find the food for the specified date
-    let food_for_date =
-        match get_food_for_date(date_to_use, mensa_name) {
-            Ok(food) => food,
-            Err(e) => {
-                println!("Error fetching food for mensa '{}' on date '{}': {}", mensa_name, date_to_use, e);
+    // Load Config
+    let config = load_config();
+    let mut mensa_name = "";
+
+    // Check primary mensa
+    if additional_mensa.is_none() {
+        mensa_name = match config.primary_mensa() {
+            Some(name) => name.as_str(),
+            None => {
+                println!("Primary Mensa is not set - please set it in the config");
                 return;
             }
         };
+    }
+
+    // If an additional mensa is specified, use it
+    if let Some(mensa_num) = additional_mensa {
+        match config.mensa_list() {
+            Some(list) => {
+                // Check if the index is valid (1-based index)
+                if *mensa_num < 1 || (*mensa_num as usize) > list.len() {
+                    println!("Invalid mensa number specified.");
+                    return;
+                }
+            }
+            None => {
+                println!("No additional mensas configured.");
+                return;
+            }
+        }
+
+        let mensa_list = config.mensa_list().as_ref().expect("No additional mensas configured.");
+        mensa_name = mensa_list
+            .get((*mensa_num - 1) as usize)
+            .expect("Failed to get mensa name from list")
+            .as_str();
+    }
+
+    // Find the food for the specified date
+    let food_for_date = match get_food_for_date(date_to_use, mensa_name) {
+        Ok(food) => food,
+        Err(e) => {
+            println!(
+                "Error fetching food for mensa '{}' on date '{}': {}",
+                mensa_name, date_to_use, e
+            );
+            return;
+        }
+    };
 
     // If json option is set, print the food in JSON format
     if cli.json {
@@ -129,5 +158,15 @@ fn date_command(
     println!("{}\n{}", mensa_name, date_to_use.format("%Y-%m-%d"));
     for food in food_for_date {
         println!("\n{}", food);
+    }
+
+    // Show options for additional mensas
+    if let Some(additional_mensas) = config.mensa_list() {
+        print!("\n---------\n\nAdditional Mensas (use argument --number <index> to select):\n");
+        for (i, mensa) in additional_mensas.iter().enumerate() {
+            print!("- {}: {}\n", i + 1, mensa);
+        }
+    } else {
+        println!("\nNo additional mensas configured.");
     }
 }
