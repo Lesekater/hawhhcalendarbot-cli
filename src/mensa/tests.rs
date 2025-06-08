@@ -8,9 +8,8 @@ mod tests {
 
     use chrono::NaiveDate;
 
-    use crate::mensa::mensa_data::load_local_data;
+    use crate::mensa::mensa_data::{load_local_data, filter_food_by_extras, filter_food_by_extras_single};
     use crate::mensa::meal::{Meal, Prices, Contents};
-    use crate::cmd::mensa::{filter_food_by_extras, filter_food_by_extras_single};
     use crate::config_managment::Extras;
 
     fn standard_meal() -> Meal {

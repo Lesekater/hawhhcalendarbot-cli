@@ -26,7 +26,6 @@
 */
 
 mod mensa;
-mod tests;
 mod cmd;
 mod config_managment;
 

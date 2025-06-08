@@ -8,6 +8,7 @@ use dirs::cache_dir;
 use reqwest::blocking as reqwest;
 
 use crate::mensa::meal::Meal;
+use crate::config_managment::Extras;
 
 ///////////////////////////////////////////////////////////////////////////
 ///////////                 Local Loading
@@ -144,4 +145,45 @@ fn get_mensadata_dir(cache_dir: &PathBuf) -> Result<std::path::PathBuf, Box<dyn 
     }
 
     Ok(mensadata_path)
+}
+
+pub fn filter_food_by_extras(
+    mut food: Vec<Meal>,
+    extras: &Vec<Extras>,
+) -> Vec<Meal> {
+    food.retain(|meal| {
+        filter_food_by_extras_single(meal, extras)
+    });
+
+    food
+}
+
+pub fn filter_food_by_extras_single(
+    food: &Meal,
+    extras: &Vec<Extras>,
+) -> bool {
+    if extras.is_empty() {
+        return true; // If no extras are specified, keep the food item
+    }
+    
+    // Check if the food item has any of the specified extras
+    for extra in extras {
+        let contains = food.contents.to_string().contains(&extra.to_string());
+        match extra {
+            // POSITIVE EXTRAS
+            Extras::Vegan | Extras::Vegetarisch | Extras::LactoseFree | Extras::AlcoholFree => {
+                if !contains {
+                    return false; // If the food does not contain the extra, skip it
+                }
+            }
+            // NEGATIVE EXTRAS
+            _ => {
+                if contains {
+                    return false; // If the food contains a negative extra, skip it
+                }
+            }
+        }
+    }
+
+    true // Keep the food item if it passes all checks
 }
