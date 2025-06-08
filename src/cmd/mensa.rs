@@ -1,3 +1,4 @@
+use crate::cmd::mensa_settings;
 use crate::mensa::mensa_data::{fetch_mensa_data, get_food_for_date, filter_food_by_extras};
 use crate::config_managment::load_config;
 use clap::{Parser, Subcommand};
@@ -45,71 +46,23 @@ enum MensaCommands {
     Cache,
     /// Shows the mensa settings
     #[clap(alias = "s")]
-    Settings {
-        #[clap(subcommand)]
-        command: SettingsCommands,
-    },
-}
-
-#[derive(Subcommand, Debug)]
-enum SettingsCommands {
-    /// Sets the primary mensa
-    Primary {
-        /// The mensa to set as primary
-        mensa: String,
-    },
-    /// Adds a mensa
-    Add {
-        /// The mensa to add
-        mensa: String,
-    },
-    /// Removes a mensa
-    Remove {
-        /// The mensa to remove
-        mensa: String,
-    },
-    /// Lists all mensas
-    List,
-    /// Sets the occupation (student, employee, guest)
-    Occupation {
-        /// The occupation to set
-        occupation: String,
-    },
-    /// Sets the extras (vegan, vegetarian, lactose-free, no alcohol, no beef, no fish...)
-    Extras {
-        /// The extras to set
-        extras: String,
-    },
+    Settings(mensa_settings::Cmd),
 }
 
 impl Cmd {
     pub fn run(self) -> Result<(), Box<dyn std::error::Error>> {
-        // let local_data = match mensa_data::load_local_data() {
-        //     Ok(data) => data,
-        //     Err(e) => {
-        //         println!("Local data not available: {}", e);
-        //         println!("Attempting to fetch data from the server...");
-
-        //         // Attempt to fetch the data if not available locally
-        //         if mensa_data::fetch_mensa_data().is_err() {
-        //             println!("Error fetching mensa data: {}", e);
-        //             std::process::exit(1);
-        //         }
-
-        //         println!("Data fetched successfully.\n");
-
-        //         mensa_data::load_local_data().unwrap()
-        //     }
-        // };
+        // TODO: Load cache in parallel
 
         let currentdate = chrono::Local::now().date_naive();
 
         match self.command {
+            // Date commands
             Some(MensaCommands::Today { .. })
             | Some(MensaCommands::Tomorrow { .. })
             | Some(MensaCommands::Date { .. }) => {
                 self.date_command(&self.command, currentdate);
             }
+            // Update/ Cache commands
             Some(MensaCommands::Update) | Some(MensaCommands::Cache) => {
                 println!("Updating mensa data...");
                 let cache_dir = dirs::cache_dir().expect("Could not find cache directory");
@@ -118,34 +71,9 @@ impl Cmd {
                     Err(e) => println!("Error updating mensa data: {}", e),
                 };
             }
-            Some(MensaCommands::Settings { command }) => {
-                match command {
-                    SettingsCommands::Primary { mensa } => {
-                        println!("Setting primary mensa to: {}", mensa);
-                        // Here you would set the primary mensa
-                    }
-                    SettingsCommands::Add { mensa } => {
-                        println!("Adding mensa: {}", mensa);
-                        // Here you would add a mensa
-                    }
-                    SettingsCommands::Remove { mensa } => {
-                        println!("Removing mensa: {}", mensa);
-                        // Here you would remove a mensa
-                    }
-                    SettingsCommands::List => {
-                        println!("Listing all mensas.");
-                        // Here you would list all available mensas
-                    }
-                    SettingsCommands::Occupation { occupation } => {
-                        println!("Setting occupation to: {}", occupation);
-                        // Here you would set the occupation
-                    }
-                    SettingsCommands::Extras { extras } => {
-                        println!("Setting extras to: {}", extras);
-                        // Here you would set the extras
-                    }
-                }
-            }
+            // Settings command
+            Some(MensaCommands::Settings(cmd)) => cmd.run()?,
+            // Default case for today if no command is specified
             None => {
                 self.date_command(&Some(MensaCommands::Today { number: self.number }), currentdate);
             }
@@ -260,5 +188,4 @@ impl Cmd {
             }
         }
     }
-
 }

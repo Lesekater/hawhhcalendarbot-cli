@@ -2,6 +2,7 @@ use clap::{Parser, Subcommand};
 
 pub(crate) mod mensa;
 pub(crate) mod events;
+pub mod mensa_settings;
 
 #[derive(Debug, Subcommand)]
 pub enum Action {
