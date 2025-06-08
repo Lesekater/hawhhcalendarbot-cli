@@ -25,122 +25,18 @@
  * calendarbot events remove <event>: removes the event from the calendar
 */
 
-mod meal;
-mod mensa_commands;
-mod mensa_data;
+mod mensa;
 mod tests;
-
+mod cmd;
 mod config_managment;
 
-use clap::{Parser, Subcommand};
-use mensa_commands::match_mensa_commands;
+use crate::cmd::Cli;
 
-#[derive(Parser)]
-#[clap(name = "calendarbot", version = "1.0", author = "Your Name")]
-#[clap(about = "A simple calendar bot for the mensa and events")]
-struct Cli {
-    /// The command to run
-    #[clap(subcommand)]
-    command: Commands,
-    /// Whether to output the results in JSON format
-    #[arg(long, short, default_value = "false")]
-    json: bool,
-}
-
-#[derive(Subcommand)]
-enum Commands {
-    /// Shows the mensa menu for today
-    Mensa {
-        #[clap(subcommand)]
-        command: Option<MensaCommands>,
-
-        #[arg(short, long)]
-        number: Option<i32>,
-    },
-    /// Shows the selected events
-    Events {
-        /// The event to show
-        event: Option<String>,
-    },
-}
-
-#[derive(Subcommand, Debug)]
-enum MensaCommands {
-    /// Shows the mensa menu for today
-    #[clap(alias = "tod")]
-    Today {
-        #[arg(short, long)]
-        number: Option<i32>,
-    },
-    /// Shows the mensa menu for tomorrow
-    #[clap(alias = "tom")]
-    Tomorrow {
-        #[arg(short, long)]
-        number: Option<i32>,
-    },
-    /// Shows the mensa menu for the given date
-    #[clap(alias = "d")]
-    Date {
-        /// The date to show the mensa menu for
-        date: String,
-
-        #[arg(short, long)]
-        number: Option<i32>,
-    },
-    /// Force full update of the mensa data
-    #[clap(alias = "u")]
-    Update,
-    /// Force full cache load of the mensa data
-    #[clap(alias = "c")]
-    Cache,
-    /// Shows the mensa settings
-    #[clap(alias = "s")]
-    Settings {
-        #[clap(subcommand)]
-        command: SettingsCommands,
-    },
-}
-
-#[derive(Subcommand, Debug)]
-enum SettingsCommands {
-    /// Sets the primary mensa
-    Primary {
-        /// The mensa to set as primary
-        mensa: String,
-    },
-    /// Adds a mensa
-    Add {
-        /// The mensa to add
-        mensa: String,
-    },
-    /// Removes a mensa
-    Remove {
-        /// The mensa to remove
-        mensa: String,
-    },
-    /// Lists all mensas
-    List,
-    /// Sets the occupation (student, employee, guest)
-    Occupation {
-        /// The occupation to set
-        occupation: String,
-    },
-    /// Sets the extras (vegan, vegetarian, lactose-free, no alcohol, no beef, no fish...)
-    Extras {
-        /// The extras to set
-        extras: String,
-    },
-}
+use clap::{Parser};
 
 fn main() {
-    let cli = Cli::parse();
-
-    let currentdate = chrono::Local::now().date_naive();
-
-    match &cli.command {
-        Commands::Mensa { command , number } => {
-            match_mensa_commands(command, currentdate, &cli, number);
-        }
-        Commands::Events { event: _ } => {}
+    if let Err(e) = Cli::parse().run() {
+        eprintln!("Error: {}", e);
+        std::process::exit(1);
     }
 }

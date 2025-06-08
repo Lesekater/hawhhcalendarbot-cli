@@ -7,7 +7,7 @@ use std::io::prelude::*;
 use dirs::cache_dir;
 use reqwest::blocking as reqwest;
 
-use crate::meal::Meal;
+use crate::mensa::meal::Meal;
 
 ///////////////////////////////////////////////////////////////////////////
 ///////////                 Local Loading
