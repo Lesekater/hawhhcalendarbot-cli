@@ -62,6 +62,30 @@ mod tests {
     }
 
     #[test]
+    fn test_load_local_data_invalid_date() {
+        // arrange
+        let test_path = PathBuf::from("./test_data");
+
+        // act
+        let result = load_local_data(NaiveDate::from_ymd_opt(2025, 6, 2).unwrap(), "TestMensa", test_path.clone());
+
+        // assert
+        assert!(result.is_err(), "Expected error when loading local data with invalid date");
+    }
+
+    #[test]
+    fn test_load_local_data_no_data() {
+        // arrange
+        let invalid_path = PathBuf::from("./non_existent_data");
+
+        // act
+        let result = load_local_data(NaiveDate::from_ymd_opt(2025, 6, 1).unwrap(), "NonExistentMensa", invalid_path);
+
+        // assert
+        assert!(result.is_err(), "Expected error when loading local data for non-existent mensa");
+    }
+
+    #[test]
     fn test_filter_food_by_extras() {
         // arrange
         let meal = standard_meal();
