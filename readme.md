@@ -34,7 +34,6 @@ This project is part of the Rust WP SoSe2025 course. The goal is to create a com
 
 - Niclas Waßmann
 - Birger Müller
-- Jonas Addicks
 - Elias Wernicke
 
 ## Notes
