@@ -8,7 +8,7 @@ mod tests {
 
     use chrono::NaiveDate;
 
-    use crate::mensa::alternative_test_meal::TestMeal;
+    use crate::mensa::test_meal::TestMeal;
     use crate::mensa::meal::{Contents, Meal, Prices};
     use crate::mensa::haw_meal::HawMeal;
     use crate::config_managment::Extras;
