@@ -8,12 +8,12 @@ mod tests {
 
     use chrono::NaiveDate;
 
-    use crate::mensa::mensa_data::{load_local_data, filter_food_by_extras, filter_food_by_extras_single};
-    use crate::mensa::meal::{Meal, Prices, Contents};
+    use crate::mensa::meal::{Contents, Meal, Prices};
+    use crate::mensa::haw_meal::HawMeal;
     use crate::config_managment::Extras;
 
-    fn standard_meal() -> Meal {
-        Meal {
+    fn standard_meal() -> HawMeal {
+        HawMeal {
             name: "Testgericht".to_string(),
             date: NaiveDate::from_ymd_opt(2025, 6, 1).unwrap(),
             category: "Hauptgericht".to_string(),
@@ -50,7 +50,7 @@ mod tests {
         file.write_all(&chrono::Local::now().timestamp().to_string().into_bytes()).expect("couldnt write timestamp");
 
         // act
-        let result = load_local_data(NaiveDate::from_ymd_opt(2025, 6, 1).unwrap(), "TestMensa", test_path.clone());
+        let result = HawMeal::load_from_local(NaiveDate::from_ymd_opt(2025, 6, 1).unwrap(), "TestMensa", test_path.clone());
 
         // assert
         assert!(result.is_ok(), "Failed to load local data: {:?}", result.err());
@@ -67,7 +67,7 @@ mod tests {
         let test_path = PathBuf::from("./test_data");
 
         // act
-        let result = load_local_data(NaiveDate::from_ymd_opt(2025, 6, 2).unwrap(), "TestMensa", test_path.clone());
+        let result = HawMeal::load_from_local(NaiveDate::from_ymd_opt(2025, 6, 2).unwrap(), "TestMensa", test_path.clone());
 
         // assert
         assert!(result.is_err(), "Expected error when loading local data with invalid date");
@@ -79,7 +79,7 @@ mod tests {
         let invalid_path = PathBuf::from("./non_existent_data");
 
         // act
-        let result = load_local_data(NaiveDate::from_ymd_opt(2025, 6, 1).unwrap(), "NonExistentMensa", invalid_path);
+        let result = HawMeal::load_from_local(NaiveDate::from_ymd_opt(2025, 6, 1).unwrap(), "NonExistentMensa", invalid_path);
 
         // assert
         assert!(result.is_err(), "Expected error when loading local data for non-existent mensa");
@@ -98,7 +98,7 @@ mod tests {
         let extras = vec![Extras::Vegan, Extras::Vegetarisch];
 
         // act
-        let filtered_meals = filter_food_by_extras(vec![meal, meal2], &extras);
+        let filtered_meals = Meal::filter_food_by_extras(vec![meal, meal2], &extras);
 
         // assert
         assert_eq!(filtered_meals.len(), 1, "Filtered meals count does not match expected");
@@ -109,12 +109,12 @@ mod tests {
         // arrange
         let meal = standard_meal();
         let extras = vec![Extras::Vegan];
-        let result = filter_food_by_extras_single(&meal, &extras);
+        let result = Meal::filter_food_by_extras_single(&meal, &extras);
         assert!(result, "Meal should match the vegan extra filter");
         let non_matching_extras = vec![Extras::AlcoholFree];
 
         // act
-        let result_non_matching = filter_food_by_extras_single(&meal, &non_matching_extras);
+        let result_non_matching = Meal::filter_food_by_extras_single(&meal, &non_matching_extras);
 
         // assert
         assert!(!result_non_matching, "Meal should not match the alcohol-free extra filter");
@@ -127,7 +127,7 @@ mod tests {
         let extras = vec![];
 
         // act
-        let result = filter_food_by_extras_single(&meal, &extras);
+        let result = Meal::filter_food_by_extras_single(&meal, &extras);
 
         // assert
         assert!(result, "Meal should match when no extras are specified");
@@ -144,7 +144,7 @@ mod tests {
         let extras = vec![Extras::FishFree];
 
         // act
-        let result = filter_food_by_extras_single(&meal, &extras);
+        let result = Meal::filter_food_by_extras_single(&meal, &extras);
 
         // assert
         assert!(!result, "Meal should not match the fish-free extra filter");

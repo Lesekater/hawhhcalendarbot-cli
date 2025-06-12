@@ -1,11 +1,12 @@
-use std::{collections::BTreeMap};
+use std::{collections::BTreeMap, path::PathBuf};
+use std::error::Error;
 
 use chrono::NaiveDate;
+use dirs::cache_dir;
 use serde::{Deserialize, Serialize};
-use std::fmt;
-use regex::Regex;
+use std::{fmt, fs};
 
-use crate::config_managment::Occupations;
+use crate::config_managment::Extras;
 
 #[derive(Debug, Hash, PartialEq, Eq)]
 pub struct Meta {
@@ -13,45 +14,86 @@ pub struct Meta {
     pub date: NaiveDate,
 }
 
-#[derive(Debug, Serialize, Deserialize, PartialEq)]
-#[serde(rename_all = "PascalCase")]
-pub struct Meal {
-    pub name: String,
-    pub category: String,
-    pub date: NaiveDate,
-    pub additives: BTreeMap<String, String>,
+pub trait Meal: Sized {
+    fn new(name: &'static str, category: &'static str, date: &'static NaiveDate, additives: &'static BTreeMap<String, String>, prices: &'static Prices, contents: &'static Contents) -> Self;
 
-    #[serde(flatten)]
-    pub prices: Prices,
+    //// Method getter ////
+    fn get_contents(&self) -> &Contents;
 
-    #[serde(flatten)]
-    pub contents: Contents,
-}
+    //// Fetching data ////
 
-impl fmt::Display for Meal {
-    // This trait requires `fmt` with this exact signature.
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        // remove parentheses (if they contain ',') from the name - e.g. "Pizza (o,b,v)" 
-        // and single words in parentheses - e.g. "Pizza (o)".
-        let re = Regex::new(r"\s*\((?:[^(),]*,[^()]*|\w+)\)\s*").unwrap();
-        let filtered_name = re.replace_all(&self.name, "").trim().to_string();
+    fn get_food_for_date(date: chrono::NaiveDate, mensa_name: &str) -> Result<Vec<Self>, Box<dyn Error>> where Self: Sized;
 
-        let config = crate::config_managment::load_config();
-        let price = match config.occupation() {
-            Some(Occupations::Student) => self.prices.price_student,
-            Some(Occupations::Employee) => self.prices.price_attendant,
-            Some(Occupations::Guest) => self.prices.price_guest,
-            _ => self.prices.price_student, // Default to student price if occupation is unknown
-        };
+    /// Local loading ///
+    
+    fn load_from_local(date: chrono::NaiveDate, mensa_name: &str, cache_dir: PathBuf) -> Result<Vec<Self>, Box<dyn Error>> where Self: Sized;
 
-        write!(
-            f,
-            "{}\n{}€ [{}]",
-            filtered_name, price, self.contents
-        )
+    //// Fetching remote data ////
+    
+    /// Fetches data for a single date
+    fn fetch_data_for_date(date: chrono::NaiveDate, mensa_name: &str) -> Result<Vec<Self>, Box<dyn Error>> where Self: Sized;
+
+    /// Fetches Mensadata and stores it in the cache dir
+    fn fetch_mensa_data(cache_dir: &PathBuf) -> Result<(), Box<dyn Error>>;
+
+    /// UTIL ///
+    
+    fn get_cache_dir() -> Result<std::path::PathBuf, Box<dyn Error>> {
+        let cache_dir = cache_dir().ok_or("Could not find cache directory")?;
+        Ok(cache_dir.join(env!("CARGO_PKG_NAME")))
+    }
+
+    fn get_mensadata_dir(cache_dir: &PathBuf) -> Result<std::path::PathBuf, Box<dyn Error>> {
+        let mensadata_path = cache_dir.join("mensadata");
+
+        if !mensadata_path.exists() {
+            fs::create_dir_all(&mensadata_path).expect("Could not create mensa data directory");
+        }
+
+        Ok(mensadata_path)
+    }
+
+    fn filter_food_by_extras(
+        mut food: Vec<Self>,
+        extras: &Vec<Extras>,
+    ) -> Vec<Self> {
+        food.retain(|meal| {
+            Self::filter_food_by_extras_single(meal, extras)
+        });
+
+        food
+    }
+
+    fn filter_food_by_extras_single(
+        food: &Self,
+        extras: &Vec<Extras>,
+    ) -> bool {
+        if extras.is_empty() {
+            return true; // If no extras are specified, keep the food item
+        }
+        
+        // Check if the food item has any of the specified extras
+        for extra in extras {
+            let contains = food.get_contents().to_string().contains(&extra.to_string());
+            match extra {
+                // POSITIVE EXTRAS
+                Extras::Vegan | Extras::Vegetarisch | Extras::LactoseFree | Extras::AlcoholFree => {
+                    if !contains {
+                        return false; // If the food does not contain the extra, skip it
+                    }
+                }
+                // NEGATIVE EXTRAS
+                _ => {
+                    if contains {
+                        return false; // If the food contains a negative extra, skip it
+                    }
+                }
+            }
+        }
+
+        true // Keep the food item if it passes all checks
     }
 }
-
 
 #[allow(clippy::struct_excessive_bools)]
 #[derive(Default, Serialize, Deserialize, PartialEq, Eq)]
@@ -88,6 +130,34 @@ pub struct Prices {
     pub price_attendant: f32,
     pub price_guest: f32,
     pub price_student: f32,
+}
+
+impl Clone for Prices {
+    fn clone(&self) -> Self {
+        Self {
+            price_attendant: self.price_attendant,
+            price_guest: self.price_guest,
+            price_student: self.price_student,
+        }
+    }
+}
+
+impl Clone for Contents {
+    fn clone(&self) -> Self {
+        Self {
+            alcohol: self.alcohol,
+            beef: self.beef,
+            fish: self.fish,
+            game: self.game,
+            gelatine: self.gelatine,
+            lactose_free: self.lactose_free,
+            lamb: self.lamb,
+            pig: self.pig,
+            poultry: self.poultry,
+            vegan: self.vegan,
+            vegetarian: self.vegetarian,
+        }
+    }
 }
 
 impl std::fmt::Debug for Contents {
