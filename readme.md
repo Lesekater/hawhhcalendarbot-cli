@@ -27,8 +27,11 @@ This project is part of the Rust WP SoSe2025 course. The goal is to create a com
 
 ## Current Status
 - Basic client functionality is implemented.
-- Mensadata json files can be downloaded
-- TODO: parsing
+- Mensa data can be downloaded, parsed, and displayed.
+- Filtering of Mensa data based on the configuration is possible.
+- Configuration can be read using Serde (custom JSON reader still TODO).
+- Write commands for the configuration are still TODO.
+- The configuration is used when fetching Mensa data.
 
 ## Team Members
 
