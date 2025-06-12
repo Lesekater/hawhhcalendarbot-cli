@@ -8,6 +8,7 @@ mod tests {
 
     use chrono::NaiveDate;
 
+    use crate::mensa::alternative_test_meal::TestMeal;
     use crate::mensa::meal::{Contents, Meal, Prices};
     use crate::mensa::haw_meal::HawMeal;
     use crate::config_managment::Extras;
@@ -36,6 +37,17 @@ mod tests {
                 pig: false,
                 poultry: false,
             },
+        }
+    }
+
+    fn test_meal() -> TestMeal {
+        TestMeal {
+            title: "Königsberger Klopse mit Kartoffeln und Erbsen".to_string(),
+            description: "Hackfleischbällchen in einer würzigen Sauce, serviert mit Kartoffeln und Erbsen.".to_string(),
+            price: 4.50,
+            category: "Hauptgericht".to_string(),
+            date: NaiveDate::parse_from_str("09-06-2025", "%d-%m-%Y").unwrap(),
+            additives: vec!["A".to_string(), "C".to_string(), "D".to_string()],
         }
     }
 
@@ -148,5 +160,53 @@ mod tests {
 
         // assert
         assert!(!result, "Meal should not match the fish-free extra filter");
+    }
+
+    ///////// Test data format
+    
+    #[test]
+    fn test_load_local_data_testdata() {
+        // arrange
+        let test_meal = test_meal();
+
+        let test_path = PathBuf::from("./test_data");
+
+        let mut file = File::create(test_path.join("mensadata/timestamp")).unwrap();
+        file.write_all(&chrono::Local::now().timestamp().to_string().into_bytes()).expect("couldnt write timestamp");
+
+        // act
+        let result = TestMeal::load_from_local(NaiveDate::from_ymd_opt(2025, 6, 1).unwrap(), "TestMensa", test_path.clone());
+
+        // assert
+        assert!(result.is_ok(), "Failed to load local data: {:?}", result.err());
+        let data = result.unwrap();
+        assert_eq!(data, vec![test_meal], "Loaded data does not match expected data");
+
+        // Clean up
+        let _ = std::fs::remove_file(test_path.join("mensadata/timestamp"));
+    }
+
+    #[test]
+    fn test_load_local_data_invalid_date_testdata() {
+        // arrange
+        let test_path = PathBuf::from("./test_data");
+
+        // act
+        let result = TestMeal::load_from_local(NaiveDate::from_ymd_opt(2025, 6, 2).unwrap(), "TestMensa", test_path.clone());
+
+        // assert
+        assert!(result.is_err(), "Expected error when loading local data with invalid date");
+    }
+
+    #[test]
+    fn test_load_local_data_no_data_testdata() {
+        // arrange
+        let invalid_path = PathBuf::from("./non_existent_data");
+
+        // act
+        let result = TestMeal::load_from_local(NaiveDate::from_ymd_opt(2025, 6, 1).unwrap(), "NonExistentMensa", invalid_path);
+
+        // assert
+        assert!(result.is_err(), "Expected error when loading local data for non-existent mensa");
     }
 }
