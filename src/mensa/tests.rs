@@ -7,11 +7,14 @@ mod tests {
     use std::path::PathBuf;
 
     use chrono::NaiveDate;
+    use tempfile::tempdir;
 
     use crate::mensa::test_meal::TestMeal;
     use crate::mensa::meal::{Contents, Meal, Prices};
     use crate::mensa::haw_meal::HawMeal;
     use crate::config_managment::Extras;
+use std::fs;
+use std::io;
 
     fn standard_meal() -> HawMeal {
         HawMeal {
@@ -168,32 +171,28 @@ mod tests {
     fn test_load_local_data_testdata() {
         // arrange
         let test_meal = test_meal();
-
-        let test_path = PathBuf::from("./test_data");
-
-        let mut file = File::create(test_path.join("mensadata/timestamp")).unwrap();
+        let temp_dir = tempdir().unwrap();
+        let test_path = temp_dir.path();
+        let dst = copy_testdata_into(test_path);
+        let mut file = File::create(dst.join("timestamp")).unwrap();
         file.write_all(&chrono::Local::now().timestamp().to_string().into_bytes()).expect("couldnt write timestamp");
-
         // act
-        let result = TestMeal::load_from_local(NaiveDate::from_ymd_opt(2025, 6, 1).unwrap(), "TestMensa", test_path.clone());
-
+        let result = TestMeal::load_from_local(NaiveDate::from_ymd_opt(2025, 6, 1).unwrap(), "TestMensa", test_path.to_path_buf());
         // assert
         assert!(result.is_ok(), "Failed to load local data: {:?}", result.err());
         let data = result.unwrap();
         assert_eq!(data, vec![test_meal], "Loaded data does not match expected data");
-
-        // Clean up
-        let _ = std::fs::remove_file(test_path.join("mensadata/timestamp"));
     }
-
+    
     #[test]
     fn test_load_local_data_invalid_date_testdata() {
         // arrange
-        let test_path = PathBuf::from("./test_data");
-
+        let temp_dir = tempdir().unwrap();
+        let test_path = temp_dir.path();
+        // copy test data to temp directory
+        copy_testdata_into(test_path);
         // act
-        let result = TestMeal::load_from_local(NaiveDate::from_ymd_opt(2025, 6, 2).unwrap(), "TestMensa", test_path.clone());
-
+        let result = TestMeal::load_from_local(NaiveDate::from_ymd_opt(2025, 6, 2).unwrap(), "TestMensa", test_path.to_path_buf());
         // assert
         assert!(result.is_err(), "Expected error when loading local data with invalid date");
     }
@@ -201,12 +200,33 @@ mod tests {
     #[test]
     fn test_load_local_data_no_data_testdata() {
         // arrange
-        let invalid_path = PathBuf::from("./non_existent_data");
-
+        let temp_dir = tempdir().unwrap();
+        let invalid_path = temp_dir.path().join("non_existent_data");
         // act
         let result = TestMeal::load_from_local(NaiveDate::from_ymd_opt(2025, 6, 1).unwrap(), "NonExistentMensa", invalid_path);
-
         // assert
         assert!(result.is_err(), "Expected error when loading local data for non-existent mensa");
+    }
+
+    fn copy_testdata_into(test_path: &std::path::Path) -> PathBuf {
+        fn copy_recursively(src: &PathBuf, dst: &PathBuf) -> io::Result<()> {
+            fs::create_dir_all(dst)?;
+            for entry in fs::read_dir(src)? {
+                let entry = entry?;
+                let src_path = entry.path();
+                let dst_path = dst.join(entry.file_name());
+                if entry.file_type()?.is_dir() {
+                    copy_recursively(&src_path, &dst_path)?;
+                } else {
+                    fs::copy(&src_path, &dst_path)?;
+                }
+            }
+            Ok(())
+        }
+
+        let src = PathBuf::from("./test_data/mensadata");
+        let dst = test_path.join("mensadata");
+        copy_recursively(&src, &dst).unwrap_or_else(|e| panic!("Error copying test data: {}", e));
+        dst
     }
 }

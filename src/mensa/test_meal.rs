@@ -1,11 +1,11 @@
-use std::{collections::BTreeMap, error::Error, fmt, fs::{self, File}, io::{Read, Write}, path::{Path, PathBuf}, process::Command};
+use std::{error::Error, fmt, fs::{self, File}, io::{Read, Write}, path::{Path, PathBuf}, process::Command};
 
 use chrono::{Datelike, IsoWeek, NaiveDate, Weekday};
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use reqwest::blocking as reqwest;
 
-use crate::mensa::meal::{Contents, Meal, Prices};
+use crate::mensa::meal::{Contents, Meal};
 
 const DATA_URL:&str = "https://raw.githubusercontent.com/testdata/";
 
@@ -73,27 +73,8 @@ impl fmt::Display for TestMeal {
 }
 
 impl Meal for TestMeal {
-    fn new(name: &'static str, category: &'static str, date: &'static NaiveDate, additives: &'static BTreeMap<String, String>, prices: &'static Prices, contents: &'static Contents) -> Self {
-        Self {
-            title: name.to_string(),
-            description: contents.to_string(),
-            category: category.to_string(),
-            date: *date,
-            additives: additives.values().map(|e|e.clone()).collect(),
-            price: prices.price_student, // Assuming a default price for the test meal
-        }
-    }
-
     fn get_contents(&self) -> &Contents {
-        !todo!()
-    }
-
-    fn get_food_for_date(date: NaiveDate, mensa_name: &str) -> Result<Vec<Self>, Box<dyn Error>> {
-        // Check if the mensa data is available locally
-        // -> if so, load it
-        // -> else load for single date directly
-        let cache_dir = Self::get_cache_dir()?;
-        Self::load_from_local(date, mensa_name, cache_dir).or_else(|_| Self::fetch_data_for_date(date, mensa_name))
+        todo!()
     }
 
     fn load_from_local(date: NaiveDate, mensa_name: &str, cache_dir: PathBuf) -> Result<Vec<Self>, Box<dyn Error>> {
@@ -185,21 +166,21 @@ impl Meal for TestMeal {
             .arg("1")
             .arg("https://github.com/testdata.git")
             .arg(&mensadata_path)
-            .output()?;        
+            .output()?;
 
-        if output.status.success() {
-            // If the clone was successful, return Ok
-            println!("Mensa data cloned successfully.");
-
-            // Refresh Timestamp
-            let mut file = File::create(Path::join(&mensadata_path, "./timestamp"))?;
-            file.write_all(&chrono::Local::now().timestamp().to_string().into_bytes()).expect("couldnt write timestamp");
-
-            Ok(())
-        } else {
+        if !output.status.success() {
             let error_message = String::from_utf8_lossy(&output.stderr);
             return Err(format!("Failed to clone mensa data: {}", error_message).into());
         }
+
+        // If the clone was successful, return Ok
+        println!("Mensa data cloned successfully.");
+
+        // Refresh Timestamp
+        let mut file = File::create(Path::join(&mensadata_path, "./timestamp"))?;
+        file.write_all(&chrono::Local::now().timestamp().to_string().into_bytes()).expect("couldnt write timestamp");
+
+        Ok(())
     }
 }
 

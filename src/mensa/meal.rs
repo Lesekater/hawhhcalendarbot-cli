@@ -1,4 +1,4 @@
-use std::{collections::BTreeMap, path::PathBuf};
+use std::path::PathBuf;
 use std::error::Error;
 
 use chrono::NaiveDate;
@@ -15,14 +15,19 @@ pub struct Meta {
 }
 
 pub trait Meal: Sized {
-    fn new(name: &'static str, category: &'static str, date: &'static NaiveDate, additives: &'static BTreeMap<String, String>, prices: &'static Prices, contents: &'static Contents) -> Self;
 
-    //// Method getter ////
+    //// Getter ////
     fn get_contents(&self) -> &Contents;
 
     //// Fetching data ////
 
-    fn get_food_for_date(date: chrono::NaiveDate, mensa_name: &str) -> Result<Vec<Self>, Box<dyn Error>> where Self: Sized;
+    fn get_food_for_date(date: NaiveDate, mensa_name: &str) -> Result<Vec<Self>, Box<dyn Error>> {
+        // Check if the mensa data is available locally
+        // -> if so, load it
+        // -> else load for single date directly
+        let cache_dir = Self::get_cache_dir()?;
+        Self::load_from_local(date, mensa_name, cache_dir).or_else(|_| Self::fetch_data_for_date(date, mensa_name))
+    }
 
     /// Local loading ///
     
