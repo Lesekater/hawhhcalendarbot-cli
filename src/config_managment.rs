@@ -6,6 +6,7 @@ use std::fs;
 use std::fmt;
 use getset::{Getters};
 
+
 //enum of possibel extras to choose from:
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
 pub(crate) enum Extras {

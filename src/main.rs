@@ -23,11 +23,15 @@
  * calendarbot events list --filter <filter>: lists all available events with the given filter
  * calendarbot events add <event>: adds the event to the calendar
  * calendarbot events remove <event>: removes the event from the calendar
+ * 
+ * 
 */
 
 mod mensa;
 mod cmd;
 mod config_managment;
+
+mod json_parser;
 
 use crate::cmd::Cli;
 
