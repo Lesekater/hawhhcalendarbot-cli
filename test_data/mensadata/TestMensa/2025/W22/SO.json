@@ -1,0 +1,14 @@
+[
+    {
+        "Title": "Königsberger Klopse mit Kartoffeln und Erbsen",
+        "Description": "Hackfleischbällchen in einer würzigen Sauce, serviert mit Kartoffeln und Erbsen.",
+        "Price": 4.50,
+        "Category": "Hauptgericht",
+        "Date": "09-06-2025",
+        "Additives": [
+            "A",
+            "C",
+            "D"
+        ]
+    }
+]

@@ -1,5 +1,6 @@
 use crate::cmd::mensa_settings;
-use crate::mensa::mensa_data::{fetch_mensa_data, get_food_for_date, filter_food_by_extras};
+use crate::mensa::meal::Meal;
+use crate::mensa::haw_meal::HawMeal;
 use crate::config_managment::load_config;
 use clap::{Parser, Subcommand};
 
@@ -66,7 +67,7 @@ impl Cmd {
             Some(MensaCommands::Update) | Some(MensaCommands::Cache) => {
                 println!("Updating mensa data...");
                 let cache_dir = dirs::cache_dir().expect("Could not find cache directory");
-                match fetch_mensa_data(&cache_dir) {
+                match HawMeal::fetch_mensa_data(&cache_dir) {
                     Ok(_) => println!("Mensa data updated successfully."),
                     Err(e) => println!("Error updating mensa data: {}", e),
                 };
@@ -148,7 +149,7 @@ impl Cmd {
         }
 
         // Find the food for the specified date
-        let food_for_date = match get_food_for_date(date_to_use, mensa_name) {
+        let food_for_date:Vec<HawMeal> = match Meal::get_food_for_date(date_to_use, mensa_name) {
             Ok(food) => food,
             Err(e) => {
                 println!(
@@ -170,7 +171,7 @@ impl Cmd {
 
         // Filter food items based on extras
         let food_for_date = match config.extras() {
-            Some(extras) => filter_food_by_extras(food_for_date, extras),
+            Some(extras) => Meal::filter_food_by_extras(food_for_date, extras),
             None => food_for_date,
         };
 
