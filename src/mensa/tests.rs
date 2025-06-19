@@ -8,9 +8,8 @@ mod tests {
 
     use chrono::NaiveDate;
 
-    use crate::mensa_data::load_local_data;
-    use crate::meal::{Meal, Prices, Contents};
-    use crate::mensa_commands::{filter_food_by_extras, filter_food_by_extras_single};
+    use crate::mensa::mensa_data::{load_local_data, filter_food_by_extras, filter_food_by_extras_single};
+    use crate::mensa::meal::{Meal, Prices, Contents};
     use crate::config_managment::Extras;
 
     fn standard_meal() -> Meal {
@@ -60,6 +59,30 @@ mod tests {
 
         // Clean up
         let _ = std::fs::remove_file(test_path.join("mensadata/timestamp"));
+    }
+
+    #[test]
+    fn test_load_local_data_invalid_date() {
+        // arrange
+        let test_path = PathBuf::from("./test_data");
+
+        // act
+        let result = load_local_data(NaiveDate::from_ymd_opt(2025, 6, 2).unwrap(), "TestMensa", test_path.clone());
+
+        // assert
+        assert!(result.is_err(), "Expected error when loading local data with invalid date");
+    }
+
+    #[test]
+    fn test_load_local_data_no_data() {
+        // arrange
+        let invalid_path = PathBuf::from("./non_existent_data");
+
+        // act
+        let result = load_local_data(NaiveDate::from_ymd_opt(2025, 6, 1).unwrap(), "NonExistentMensa", invalid_path);
+
+        // assert
+        assert!(result.is_err(), "Expected error when loading local data for non-existent mensa");
     }
 
     #[test]
