@@ -42,29 +42,28 @@ impl Cmd {
         match self.command {
             SettingsCommands::Primary { mensa } => {
                 println!("Setting primary mensa to: {}", mensa);
-                // Hier würdest du die primäre Mensa setzen
+                todo!("Implement the logic to set the primary mensa in the settings");
             }
             SettingsCommands::Add { mensa } => {
                 println!("Adding mensa: {}", mensa);
-                // Hier würdest du eine Mensa hinzufügen
+                todo!("Implement the logic to add a mensa in the settings");
             }
             SettingsCommands::Remove { mensa } => {
                 println!("Removing mensa: {}", mensa);
-                // Hier würdest du eine Mensa entfernen
+                todo!("Implement the logic to remove a mensa in the settings");
             }
             SettingsCommands::List => {
                 println!("Listing all mensas.");
-                // Hier würdest du alle verfügbaren Mensas auflisten
+                todo!("Implement the logic to list all mensas in the settings");
             }
             SettingsCommands::Occupation { occupation } => {
                 println!("Setting occupation to: {}", occupation);
-                // Hier würdest du die Occupation setzen
+                todo!("Implement the logic to set the occupation in the settings");
             }
             SettingsCommands::Extras { extras } => {
                 println!("Setting extras to: {}", extras);
-                // Hier würdest du die Extras setzen
+                todo!("Implement the logic to set the extras in the settings");
             }
         }
-        Ok(())
     }
 }
