@@ -1,14 +1,14 @@
 use clap::builder::Str;
-use serde::{Deserialize, Serialize};
 use serde_json;
 use std::error::Error;
 use std::fs;
 use std::fmt;
 use getset::{Getters};
 
+use crate::json_parser;
+
 
 //enum of possibel extras to choose from:
-#[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
 pub(crate) enum Extras {
     Vegan,
     Vegetarisch,
@@ -41,7 +41,6 @@ impl fmt::Display for Extras {
 }
 
 //enum of possibel occupations
-#[derive(Serialize, Deserialize)]
 pub enum Occupations {
     Student,
     Employee,
@@ -49,8 +48,7 @@ pub enum Occupations {
 }
 
 //Struct of the Cofig to load form the JSON File
-#[derive(Getters, Serialize, Deserialize)]
-#[getset(get = "pub")]
+/* */
 pub struct Config {
     primary_mensa: Option<String>,
     mensa_list: Option<Vec<String>>,
@@ -114,7 +112,7 @@ pub fn load_config() -> Config {
             .unwrap()
             .join("hawhhcalendarbot/cfg.json"),
     ) {
-        Ok(json_config) => serde_json::from_str(&json_config).expect("Fehler beim Parsen der JSON"),
+        Ok(json_config) => json_parser::Config::struct_from_json_file(&json_config).expect("Fehler beim Parsen der JSON"),
         Err(_) => Config::new(),
     }
 }

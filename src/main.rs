@@ -29,7 +29,7 @@
 
 mod mensa;
 mod cmd;
-mod config_managment;
+//mod config_managment;
 
 mod json_parser;
 

@@ -67,6 +67,11 @@ impl Config {
         mensa_list.push(mensa_to_add);
     }
 
+    pub fn get_mensa_list(&mut self) -> &Vec<String>{
+
+        self.mensa_list.as_ref().unwrap()
+    }
+
     pub fn remove_mensa(&mut self, mensa_to_remove: String) {
         if let Some(mensa_list) = self.mensa_list.as_mut() {
             mensa_list.retain(|e| e.as_str() != mensa_to_remove.as_str());
@@ -85,17 +90,44 @@ impl Config {
     pub fn remove_extra(&mut self, extra_to_remove: Extras) {
     if let Some(extra_list) = self.extras.as_mut() {
         extra_list.retain(|e| e.as_str() != extra_to_remove.as_str());
+        }
+    }
+
+    pub fn load_config() -> Config {
+        match fs::read_to_string(
+            dirs::config_local_dir()
+                .unwrap()
+                .join("hawhhcalendarbot/cfg.json"),
+        ) {
+            Ok(json_config) => Config::struct_from_json_file(&json_config).expect("Fehler beim Parsen der JSON"),
+            Err(_) => Config::new(),
+        }
+    }
+
+    pub fn save_config_json(user_config: &Config) {
+        let conf_dir = dirs::config_local_dir().unwrap().join("hawhhcalendarbot");
+
+        let json_string = json_file_from_struct(user_config).expect("Fehler beim Serialisieren");
+        let _ = fs::create_dir_all(conf_dir);
+
+        fs::write(
+            dirs::config_local_dir()
+                .unwrap()
+                .join("hawhhcalendarbot/cfg.json"),
+        json_string,
+        )
+        .expect("Fehler beim Schreiben der Datei");
     }
 
 
-}
 
 //Json Parser
-    pub fn struct_from_json_file(&mut self, path: &str) -> Result<Config, Box<dyn std::error::Error>> {
+    fn struct_from_json_file(/*path: &str*/ json_config: &String) -> Result<Config, Box<dyn std::error::Error>> {
 
-        let mut config = Config::new();
+        //let mut config = Config::new();
 
-        let config_content_raw = fs::read_to_string(path)?;
+        //let config_content_raw = fs::read_to_string(path)?;
+        let config_content_raw = json_config;
 
 
         //Whitespace, Leerzeichen und Zeilenumbrüche entfernen
@@ -151,11 +183,11 @@ impl Config {
 
     }
 
-    pub fn json_file_from_struct(path: &str, config: &Config) -> Result<(), Box<dyn std::error::Error>>  {
+    fn json_file_from_struct(config: &Config) -> Result<String, Box<dyn std::error::Error>>  {
 
         let primary_mensa = format!("{:?}", config.primary_mensa);
 
-        let mut mensa_list:String = config.mensa_list
+        let mensa_list:String = config.mensa_list
                                                         .iter()
                                                         .map(|s|  format!("{:?}", s))
                                                         .collect::<Vec<String>>()            // in Vec sammeln
@@ -173,14 +205,14 @@ impl Config {
 
         let json_string = format!("{{ \n   \"{}\": {},\n   \"{}\": {},\n   \"{}\": {},\n   \"{}\": {}\n}}", ConfigName::primary_mensa.as_str(), primary_mensa, ConfigName::mensa_list.as_str(), mensa_list, ConfigName::occupation.as_str(), occupations, ConfigName::extras.as_str(), extra_list);
 
-        fs::write(path, json_string)?;
+        //fs::write(path, json_string)?;
 
-        Ok(())
+        Ok(json_string)
 
 
     }
-}
 
+}
 /*
     Um an die Namen der Enums zu kommen, wird diese als impl implementiert, dies gibt den Namen als &str aus.
 */
