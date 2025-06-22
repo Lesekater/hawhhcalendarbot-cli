@@ -126,13 +126,13 @@ use std::io;
         let extras = vec![Extras::Vegan];
         let result = Meal::filter_food_by_extras_single(&meal, &extras);
         assert!(result, "Meal should match the vegan extra filter");
-        let non_matching_extras = vec![Extras::AlcoholFree];
+        let non_matching_extras = vec![Extras::Alcohol];
 
         // act
         let result_non_matching = Meal::filter_food_by_extras_single(&meal, &non_matching_extras);
 
         // assert
-        assert!(!result_non_matching, "Meal should not match the alcohol-free extra filter");
+        assert!(!result_non_matching, "Meal should not match the alcohol extra filter");
     }
 
     #[test]
@@ -156,7 +156,7 @@ use std::io;
         meal.contents.fish = true;
         meal.contents.vegetarian = false;
         meal.contents.vegan = false;
-        let extras = vec![Extras::FishFree];
+        let extras = vec![Extras::Fish];
 
         // act
         let result = Meal::filter_food_by_extras_single(&meal, &extras);

@@ -82,7 +82,7 @@ pub trait Meal: Sized {
             let contains = food.get_contents().to_string().contains(&extra.as_str());
             match extra {
                 // POSITIVE EXTRAS
-                Extras::Vegan | Extras::Vegetarisch | Extras::LactoseFree | Extras::AlcoholFree => {
+                Extras::Vegan | Extras::Vegetarisch | Extras::LactoseFree | Extras::Alcohol => {
                     if !contains {
                         return false; // If the food does not contain the extra, skip it
                     }
