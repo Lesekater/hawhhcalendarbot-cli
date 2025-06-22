@@ -12,7 +12,7 @@ mod tests {
     use crate::mensa::test_meal::TestMeal;
     use crate::mensa::meal::{Contents, Meal, Prices};
     use crate::mensa::haw_meal::HawMeal;
-    use crate::config_managment::Extras;
+    use crate::json_parser::Extras;
 use std::fs;
 use std::io;
 

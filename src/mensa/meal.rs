@@ -6,7 +6,7 @@ use dirs::cache_dir;
 use serde::{Deserialize, Serialize};
 use std::{fmt, fs};
 
-use crate::config_managment::Extras;
+use crate::json_parser::Extras;
 
 #[derive(Debug, Hash, PartialEq, Eq)]
 pub struct Meta {
@@ -79,7 +79,7 @@ pub trait Meal: Sized {
         
         // Check if the food item has any of the specified extras
         for extra in extras {
-            let contains = food.get_contents().to_string().contains(&extra.to_string());
+            let contains = food.get_contents().to_string().contains(&extra.as_str());
             match extra {
                 // POSITIVE EXTRAS
                 Extras::Vegan | Extras::Vegetarisch | Extras::LactoseFree | Extras::AlcoholFree => {

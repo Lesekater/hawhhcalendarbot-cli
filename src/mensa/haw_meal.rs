@@ -5,7 +5,7 @@ use regex::Regex;
 use serde::{Deserialize, Serialize};
 use reqwest::blocking as reqwest;
 
-use crate::{config_managment::Occupations, mensa::meal::{Contents, Meal, Prices}};
+use crate::{json_parser::Occupations, mensa::meal::{Contents, Meal, Prices}};
 
 const DATA_URL:&str = "https://raw.githubusercontent.com/HAWHHCalendarBot/mensa-data/refs/heads/main/";
 
@@ -32,8 +32,8 @@ impl fmt::Display for HawMeal {
         let re = Regex::new(r"\s*\((?:[^(),]*,[^()]*|\w+)\)\s*").unwrap();
         let filtered_name = re.replace_all(&self.name, "").trim().to_string();
 
-        let config = crate::config_managment::load_config();
-        let price = match config.occupation() {
+        let config = crate::json_parser::Config::load_config();
+        let price = match config.get_occupation() {
             Some(Occupations::Student) => self.prices.price_student,
             Some(Occupations::Employee) => self.prices.price_attendant,
             Some(Occupations::Guest) => self.prices.price_guest,

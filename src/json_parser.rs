@@ -33,7 +33,7 @@ pub(crate) enum ConfigName {
 
 #[derive(Debug)]
 pub struct Config {
-    primary_mensa: String,
+    primary_mensa: Option<String>,
     mensa_list: Option<Vec<String>>,
     occupation: Option<Occupations>,
     extras: Option<Vec<Extras>>,
@@ -48,7 +48,7 @@ impl Config {
 //Config:
     fn new() -> Self{
         Self {
-            primary_mensa: String::new(),
+            primary_mensa: Some(String::new()),
             mensa_list: Some(vec![String::new()]),
             occupation: Some(Occupations::Employee),
             extras: Some(vec![Extras::Vegan]),
@@ -58,7 +58,11 @@ impl Config {
 
     
     pub fn update_primary_mensa(&mut self, mensa_to_add: String) {
-        self.primary_mensa = mensa_to_add;
+        self.primary_mensa = Some(mensa_to_add);
+    }
+
+    pub fn get_primary_mensa(&self) -> Option<String>{
+        self.primary_mensa.clone()
     }
 
     pub fn update_mensa_list(&mut self, mensa_to_add: String) {
@@ -67,9 +71,9 @@ impl Config {
         mensa_list.push(mensa_to_add);
     }
 
-    pub fn get_mensa_list(&mut self) -> &Vec<String>{
+    pub fn get_mensa_list(&mut self) -> Option<&Vec<String>>{
 
-        self.mensa_list.as_ref().unwrap()
+        Some(self.mensa_list.as_ref().unwrap())
     }
 
     pub fn remove_mensa(&mut self, mensa_to_remove: String) {
@@ -82,6 +86,11 @@ impl Config {
         self.occupation = Some(new_occ);
     }
 
+    pub fn get_occupation(&self) -> Option<&Occupations> {
+
+        self.occupation.as_ref()
+    }
+
     pub fn add_extra(&mut self, extra_to_add: Extras) {
         let extra_list = self.extras.as_mut().unwrap();
         extra_list.push(extra_to_add);
@@ -91,6 +100,11 @@ impl Config {
     if let Some(extra_list) = self.extras.as_mut() {
         extra_list.retain(|e| e.as_str() != extra_to_remove.as_str());
         }
+    }
+
+    pub fn get_extras(&self) -> Option<&Vec<Extras>> {
+
+        self.extras.as_ref()
     }
 
     pub fn load_config() -> Config {
@@ -107,7 +121,7 @@ impl Config {
     pub fn save_config_json(user_config: &Config) {
         let conf_dir = dirs::config_local_dir().unwrap().join("hawhhcalendarbot");
 
-        let json_string = json_file_from_struct(user_config).expect("Fehler beim Serialisieren");
+        let json_string = Config::json_file_from_struct(user_config).expect("Fehler beim Serialisieren");
         let _ = fs::create_dir_all(conf_dir);
 
         fs::write(
@@ -176,7 +190,7 @@ impl Config {
                                             .collect();
 
         //Config zurückkgeben:
-        Ok(Config { primary_mensa: primary_mensa,
+        Ok(Config { primary_mensa: Some(primary_mensa),
                     mensa_list: Some(mensa_list),
                     occupation: (occupations),
                     extras: Some(extra_list) })

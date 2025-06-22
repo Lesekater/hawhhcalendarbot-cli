@@ -1,7 +1,8 @@
 use crate::cmd::mensa_settings;
 use crate::mensa::meal::Meal;
 use crate::mensa::haw_meal::HawMeal;
-use crate::config_managment::load_config;
+//use crate::config_managment::load_config;
+use crate::json_parser::Config;
 use clap::{Parser, Subcommand};
 
 #[derive(Debug, Parser)]
@@ -111,13 +112,13 @@ impl Cmd {
         };
 
         // Load Config
-        let config = load_config();
-        let mut mensa_name = "";
+        let mut config = Config::load_config();
+        let mut mensa_name = String::new();
 
         // Check primary mensa
         if additional_mensa.is_none() {
-            mensa_name = match config.primary_mensa() {
-                Some(name) => name.as_str(),
+            mensa_name = match config.get_primary_mensa() {
+                Some(name) => name,
                 None => {
                     println!("Primary Mensa is not set - please set it in the config");
                     return;
@@ -127,7 +128,7 @@ impl Cmd {
 
         // If an additional mensa is specified, use it
         if let Some(mensa_num) = additional_mensa {
-            match config.mensa_list() {
+            match config.get_mensa_list() {
                 Some(list) => {
                     // Check if the index is valid (1-based index)
                     if *mensa_num < 1 || (*mensa_num as usize) > list.len() {
@@ -141,15 +142,20 @@ impl Cmd {
                 }
             }
 
-            let mensa_list = config.mensa_list().as_ref().expect("No additional mensas configured.");
+            let mensa_list = match config.get_mensa_list() {
+                Some(list) => list,
+                None => {
+                    println!("No additional mensas configured.");
+                    return;
+            }};
             mensa_name = mensa_list
                 .get((*mensa_num - 1) as usize)
                 .expect("Failed to get mensa name from list")
-                .as_str();
+                .clone();
         }
 
         // Find the food for the specified date
-        let food_for_date:Vec<HawMeal> = match Meal::get_food_for_date(date_to_use, mensa_name) {
+        let food_for_date:Vec<HawMeal> = match Meal::get_food_for_date(date_to_use, mensa_name.as_str()) {
             Ok(food) => food,
             Err(e) => {
                 println!(
@@ -170,7 +176,7 @@ impl Cmd {
         println!("{}\n{}", mensa_name, date_to_use.format("%Y-%m-%d"));
 
         // Filter food items based on extras
-        let food_for_date = match config.extras() {
+        let food_for_date = match config.get_extras() {
             Some(extras) => Meal::filter_food_by_extras(food_for_date, extras),
             None => food_for_date,
         };
@@ -181,12 +187,14 @@ impl Cmd {
         }
 
         // Show options for additional mensas
-        if config.mensa_list().is_some() && !config.mensa_list().as_ref().unwrap().is_empty() {
-            let additional_mensas = config.mensa_list().as_ref().unwrap();
-            print!("\n---------\n\nAdditional Mensas (use argument --number <index> to select):\n");
-            for (i, mensa) in additional_mensas.iter().enumerate() {
-                print!("- {}: {}\n", i + 1, mensa);
+        if let Some(mensa_list) = config.get_mensa_list() {
+            if !mensa_list.is_empty() {
+                println!("\n---------\n\nAdditional Mensas (use argument --number <index> to select):");
+                for (i, mensa) in mensa_list.iter().enumerate() {
+                    println!("- {}: {}", i + 1, mensa);
+                }
             }
         }
+
     }
 }
