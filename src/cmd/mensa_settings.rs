@@ -53,41 +53,49 @@ impl Cmd {
             }
             SettingsCommands::Add { mensa } => {
                 println!("Adding mensa: {}", mensa);
-                todo!("Implement the logic to add a mensa in the settings");
+                //todo!("Implement the logic to add a mensa in the settings");
 
                 let mut cfg = Config::load_config();
                 cfg.update_mensa_list(mensa);
                 Config::save_config_json(&cfg);
+
+                Ok(())
             }
             SettingsCommands::Remove { mensa } => {
                 println!("Removing mensa: {}", mensa);
-                todo!("Implement the logic to remove a mensa in the settings");
+                //todo!("Implement the logic to remove a mensa in the settings");
 
                 let mut cfg = Config::load_config();
                 cfg.remove_mensa(mensa);
                 Config::save_config_json(&cfg);
+
+                Ok(())
             }
             SettingsCommands::List => {
                 println!("Listing all mensas.");
-                todo!("Implement the logic to list all mensas in the settings");
+                //todo!("Implement the logic to list all mensas in the settings");
 
                 let mut cfg = Config::load_config();
                 let mensa_list = cfg.get_mensa_list();
 
                 //Todo: Mensa liste in clap darstellen
+
+                Ok(())
             }
             SettingsCommands::Occupation { occupation } => {
                 println!("Setting occupation to: {}", occupation);
-                todo!("Implement the logic to set the occupation in the settings");
+                //todo!("Implement the logic to set the occupation in the settings");
 
                 let mut cfg = Config::load_config();
                 let o = Occupations::from_str(&occupation).unwrap();
                 cfg.update_occupation(o);
                 Config::save_config_json(&cfg);
+                
+                Ok(())
             }
             SettingsCommands::Extras { extras } => {
                 println!("Setting extras to: {}", extras);
-                todo!("Implement the logic to set the extras in the settings");
+                //todo!("Implement the logic to set the extras in the settings");
 
                 let mut cfg = Config::load_config();
 
@@ -96,6 +104,8 @@ impl Cmd {
                 cfg.add_extra(e);
                 
                 Config::save_config_json(&cfg);
+
+                Ok(())
             }
         }
     }

@@ -28,6 +28,7 @@ pub(crate) enum ConfigName {
     mensa_list,
     occupation,
     extras,
+    events,
 }
 
 
@@ -37,6 +38,7 @@ pub struct Config {
     mensa_list: Option<Vec<String>>,
     occupation: Option<Occupations>,
     extras: Option<Vec<Extras>>,
+    events: Option<Vec<String>>,
 }
 
 /*
@@ -52,6 +54,7 @@ impl Config {
             mensa_list: Some(vec![String::new()]),
             occupation: Some(Occupations::Employee),
             extras: Some(vec![Extras::Vegan]),
+            events: Some(vec![String::new()]),
         }
 
     }
@@ -155,6 +158,7 @@ impl Config {
         let ml_end = config_content_cleaned.find(ConfigName::mensa_list.as_str()).unwrap() + ConfigName::mensa_list.as_str().len();
         let op_end = config_content_cleaned.find(ConfigName::occupation.as_str()).unwrap() + ConfigName::occupation.as_str().len();
         let et_end = config_content_cleaned.find(ConfigName::extras.as_str()).unwrap() + ConfigName::extras.as_str().len();
+        let ev_end = config_content_cleaned.find(ConfigName::events.as_str()).unwrap() + ConfigName::events.as_str().len();
 
         //Inhalt der primary mensa extrahieren:
 
@@ -189,11 +193,23 @@ impl Config {
                                             .map(|e| Extras::from_str(&e))
                                             .collect();
 
+        //Inhalte der Events extrahieren:
+        let event_list_all =  &config_content_cleaned[ev_end+3..ev_end+3 + config_content_cleaned[ev_end+3..].find(']').unwrap()];
+        let event_list: Vec<String> = event_list_all
+                                            .chars()
+                                            .filter(|&c| c != '"')
+                                            .collect::<String>()
+                                            .split(',')
+                                            .map(|s| s.to_string())
+                                            .collect();
+
         //Config zurückkgeben:
         Ok(Config { primary_mensa: Some(primary_mensa),
                     mensa_list: Some(mensa_list),
                     occupation: (occupations),
-                    extras: Some(extra_list) })
+                    extras: Some(extra_list),
+                    events: Some(event_list)
+                })
 
     }
 
@@ -217,7 +233,13 @@ impl Config {
                                                         .join(", ");
         extra_list = format!("[{}]", extra_list);
 
-        let json_string = format!("{{ \n   \"{}\": {},\n   \"{}\": {},\n   \"{}\": {},\n   \"{}\": {}\n}}", ConfigName::primary_mensa.as_str(), primary_mensa, ConfigName::mensa_list.as_str(), mensa_list, ConfigName::occupation.as_str(), occupations, ConfigName::extras.as_str(), extra_list);
+        let event_list:String = config.events
+                                                        .iter()
+                                                        .map(|s|  format!("{:?}", s))
+                                                        .collect::<Vec<String>>()            // in Vec sammeln
+                                                        .join(", "); 
+
+        let json_string = format!("{{ \n   \"{}\": {},\n   \"{}\": {},\n   \"{}\": {},\n   \"{}\": {}\n   \"{}\": {}\n}}", ConfigName::primary_mensa.as_str(), primary_mensa, ConfigName::mensa_list.as_str(), mensa_list, ConfigName::occupation.as_str(), occupations, ConfigName::extras.as_str(), extra_list, ConfigName::events.as_str(), event_list);
 
         //fs::write(path, json_string)?;
 
@@ -271,7 +293,8 @@ impl ConfigName {
             ConfigName::primary_mensa => "primary_mensa",
             ConfigName::mensa_list => "mensa_list",
             ConfigName::occupation => "occupation",
-            ConfigName::extras => "extras"
+            ConfigName::extras => "extras",
+            ConfigName::events => "events",
         }
     }
 }
