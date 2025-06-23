@@ -13,12 +13,12 @@ pub(crate) enum Extras {
     Vegetarisch,
     LactoseFree,
     Alcohol,
-    Beef,
+    BeefFree,
     Fish,
-    Gelatine,
-    Lamb,
-    Pig,
-    Poultry,
+    GelatineFree,
+    LambFree,
+    PigFree,
+    PoultryFree,
     Other(String),
 }
 
@@ -51,10 +51,10 @@ impl Config {
     fn new() -> Self{
         Self {
             primary_mensa: Some(String::new()),
-            mensa_list: Some(vec![String::new()]),
-            occupation: Some(Occupations::Employee),
-            extras: Some(vec![Extras::Vegan]),
-            events: Some(vec![String::new()]),
+            mensa_list: Some(Vec::new()),
+            occupation: None,
+            extras: Some(Vec::new()),
+            events: Some(Vec::new()),
         }
 
     }
@@ -111,14 +111,17 @@ impl Config {
     }
 
     pub fn load_config() -> Config {
-        match fs::read_to_string(
-            dirs::config_local_dir()
+        println!("Config geladen!");
+        let path = dirs::config_local_dir()
                 .unwrap()
-                .join("hawhhcalendarbot/cfg.json"),
+                .join("hawhhcalendarbot/cfg.json");
+        println!("Pfad: {:?}", path);
+        match fs::read_to_string(path,
         ) {
             Ok(json_config) => Config::struct_from_json_file(&json_config).expect("Fehler beim Parsen der JSON"),
             Err(_) => Config::new(),
         }
+        
     }
 
     pub fn save_config_json(user_config: &Config) {
@@ -134,9 +137,17 @@ impl Config {
         json_string,
         )
         .expect("Fehler beim Schreiben der Datei");
+        println!("Config gespeichert!")
     }
 
-
+//Hilfs funktionen:
+    fn strip_leading_null(s: &str) -> String {
+        let mut chars = s.chars();
+        match chars.next() {
+            Some('\0') => chars.collect(), // Rest ab dem zweiten Zeichen
+            _ => s.to_string(),            // Unverändert zurückgeben
+        }
+    }   
 
 //Json Parser
     fn struct_from_json_file(/*path: &str*/ json_config: &String) -> Result<Config, Box<dyn std::error::Error>> {
@@ -215,23 +226,34 @@ impl Config {
 
     fn json_file_from_struct(config: &Config) -> Result<String, Box<dyn std::error::Error>>  {
 
-        let primary_mensa = format!("{:?}", config.primary_mensa);
+        let primary_mensa = match &config.primary_mensa {
+            Some(pm) => format!("\"{}\"", pm),
+            None => "null".to_string(), // oder "" falls du leere Strings willst
+        };
 
-        let mensa_list:String = config.mensa_list
+        let mut mensa_list:String = config.mensa_list
                                                         .iter()
                                                         .map(|s|  format!("{:?}", s))
                                                         .collect::<Vec<String>>()            // in Vec sammeln
-                                                        .join(", ");  
-        //mensa_list = format!("[{}]", mensa_list);                                    
+                                                        .join(", ");                                      
     
-        let occupations = format!("\"{}\"", config.occupation.as_ref().unwrap().as_str());
+        let occupations = match &config.occupation {
+            Some(occ) => format!("\"{:?}\"", occ),
+            None => "null".to_string(), // oder "" falls du leere Strings willst
+        };
 
-        let mut extra_list: String = config.extras.as_ref().unwrap()
-                                                        .iter()
-                                                        .map(|e| format!("\"{}\"", e.as_str()))
-                                                        .collect::<Vec<String>>()
-                                                        .join(", ");
-        extra_list = format!("[{}]", extra_list);
+        let mut extra_list = config.extras.as_ref().map_or(
+    "null".to_string(), // oder "[]".to_string()
+          |extras| {
+                let joined = extras
+                    .iter()
+                    .map(|e| format!("\"{}\"", e.as_str()))
+                    .collect::<Vec<String>>()
+                    .join(", ");
+        format!("[{}]", joined)
+            },
+        );
+
 
         let event_list:String = config.events
                                                         .iter()
@@ -239,7 +261,7 @@ impl Config {
                                                         .collect::<Vec<String>>()            // in Vec sammeln
                                                         .join(", "); 
 
-        let json_string = format!("{{ \n   \"{}\": {},\n   \"{}\": {},\n   \"{}\": {},\n   \"{}\": {}\n   \"{}\": {}\n}}", ConfigName::primary_mensa.as_str(), primary_mensa, ConfigName::mensa_list.as_str(), mensa_list, ConfigName::occupation.as_str(), occupations, ConfigName::extras.as_str(), extra_list, ConfigName::events.as_str(), event_list);
+        let json_string = format!("{{ \n   \"{}\": {},\n   \"{}\": {},\n   \"{}\": {},\n   \"{}\": {},\n   \"{}\": {}\n}}", ConfigName::primary_mensa.as_str(), primary_mensa, ConfigName::mensa_list.as_str(), mensa_list, ConfigName::occupation.as_str(), occupations, ConfigName::extras.as_str(), extra_list, ConfigName::events.as_str(), event_list);
 
         //fs::write(path, json_string)?;
 
@@ -254,37 +276,48 @@ impl Config {
 */
 
 impl Extras {
+    fn capitalize_first(s: &str) -> String {
+        let mut chars = s.chars();
+        match chars.next() {
+            Some(first) => first.to_uppercase().collect::<String>() + chars.as_str(),
+            None => String::new(),
+        }
+    }
+
     pub fn as_str(&self) -> &str {
         match self {
             Extras::Vegan => "Vegan",
-            Extras::Vegetarisch => "Vegetarian",
+            Extras::Vegetarisch => "Vegetarisch",
             Extras::LactoseFree => "LactoseFree",
             Extras::Alcohol => "Alcohol",
-            Extras::Beef => "Beef",
+            Extras::BeefFree => "Beeffree",
             Extras::Fish => "Fish",
-            Extras::Gelatine => "Gelatine",
-            Extras::Lamb => "Lamb",
-            Extras::Pig => "Pig",
-            Extras::Poultry => "Poultry",
+            Extras::GelatineFree => "Gelatinefree",
+            Extras::LambFree => "Lambfree",
+            Extras::PigFree => "Pigfree",
+            Extras::PoultryFree => "Poultryfree",
             Extras::Other(_) => "Other",
         }
     }
 
-    pub fn from_str(s: &str) -> Extras {
-        match s.to_lowercase().as_str() {
-            "Vegan" => Extras::Vegan,
-            "Vegetarian" => Extras::Vegetarisch,
-            "Lactosefree" => Extras::LactoseFree,
-            "Alcoholfree" => Extras::Alcohol,
-            "Beef" => Extras::Beef,
-            "Fish" => Extras::Fish,
-            "Gelatine" => Extras::Gelatine,
-            "Lamb" => Extras::Lamb,
-            "Pig" => Extras::Pig,
-            "Poultry" => Extras::Poultry,
-            other => Extras::Other(other.to_string()),
+   pub fn from_str(s: &str) -> Extras {
+        match Self::capitalize_first(s) {
+            ref s if s == "Vegan" => Extras::Vegan,
+            ref s if s == "Vegetarisch" => Extras::Vegetarisch,
+            ref s if s == "Lactosefree" => Extras::LactoseFree,
+            ref s if s == "Alcohol" => Extras::Alcohol,
+            ref s if s == "Beeffree" => Extras::BeefFree,
+            ref s if s == "Fish" => Extras::Fish,
+            ref s if s == "Gelatinefree" => Extras::GelatineFree,
+            ref s if s == "Lambfree" => Extras::LambFree,
+            ref s if s == "Pigfree" => Extras::PigFree,
+            ref s if s == "Poultryfree" => Extras::PoultryFree,
+            other => Extras::Other(other),
         }
-    }
+}
+
+
+    
 }
 
 impl ConfigName {

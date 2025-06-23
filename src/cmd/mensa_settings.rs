@@ -45,11 +45,12 @@ impl Cmd {
         match self.command {
             SettingsCommands::Primary { mensa } => {
                 println!("Setting primary mensa to: {}", mensa);
-                todo!("Implement the logic to set the primary mensa in the settings");
+                //todo!("Implement the logic to set the primary mensa in the settings");
 
                 let mut cfg = Config::load_config();
                 cfg.update_primary_mensa(mensa);
                 Config::save_config_json(&cfg);
+                Ok(())
             }
             SettingsCommands::Add { mensa } => {
                 println!("Adding mensa: {}", mensa);
