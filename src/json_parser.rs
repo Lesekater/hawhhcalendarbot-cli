@@ -111,7 +111,6 @@ impl Config {
     }
 
     pub fn load_config() -> Config {
-        print!("LOAD");
         let path = dirs::config_local_dir()
                 .unwrap()
                 .join("hawhhcalendarbot/cfg.json");
