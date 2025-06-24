@@ -55,8 +55,7 @@ enum MensaCommands {
 impl Cmd {
     pub fn run(self) -> Result<(), Box<dyn std::error::Error>> {
         let handle = thread::spawn(|| {
-            let cache_dir = dirs::cache_dir().expect("Could not find cache directory");
-            match HawMeal::fetch_mensa_data(&cache_dir) {
+            match HawMeal::update_mensa_data() {
                 Ok(_) => {},
                 Err(e) => println!("Error updating mensa data: {}", e),
             };

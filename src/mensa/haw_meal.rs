@@ -127,8 +127,6 @@ impl Meal for HawMeal {
             fs::create_dir_all(&mensadata_path)?;
         }
 
-        println!("fetching into: {:?}", &mensadata_path);
-
         // Clone the mensa data repository
         let output = Command::new("git")
             .arg("clone")

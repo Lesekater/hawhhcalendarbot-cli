@@ -1,5 +1,6 @@
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::error::Error;
+use std::str::FromStr;
 
 use chrono::NaiveDate;
 use dirs::cache_dir;
@@ -37,6 +38,32 @@ pub trait Meal: Sized {
     
     /// Fetches data for a single date
     fn fetch_data_for_date(date: chrono::NaiveDate, mensa_name: &str) -> Result<Vec<Self>, Box<dyn Error>> where Self: Sized;
+
+    fn update_mensa_data() -> Result<(), Box<dyn Error>> {
+        let cache_dir = Self::get_cache_dir()?;
+        let mensadata_path = Self::get_mensadata_dir(&cache_dir)?;
+        
+        // Check if timestamp file exists & is older than 1 day
+        let timestamp_path = mensadata_path.join("timestamp");
+
+        if !timestamp_path.exists() {
+            // If timestamp file does not exist, fetch new data
+            Self::fetch_mensa_data(&cache_dir)?;
+        }
+
+        let mut file:PathBuf = timestamp_path;
+        let contents = fs::read_to_string(&mut file)?;
+        let last_change = chrono::DateTime::from_timestamp(contents.parse()?, 0).unwrap();
+        let last_change_date = last_change.date_naive();
+
+        if chrono::Local::now().date_naive().signed_duration_since(last_change_date) <= chrono::Duration::days(1) {
+            return Ok(()); // Data is up-to-date
+        }
+        
+        Self::fetch_mensa_data(&cache_dir)?;
+
+        Ok(())
+    }
 
     /// Fetches Mensadata and stores it in the cache dir
     fn fetch_mensa_data(cache_dir: &PathBuf) -> Result<(), Box<dyn Error>>;
