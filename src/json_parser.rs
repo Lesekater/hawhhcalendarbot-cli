@@ -19,7 +19,7 @@ pub(crate) enum Extras {
     LambFree,
     PigFree,
     PoultryFree,
-    Other(String),
+    Unknown,
 }
 
 #[derive(Debug)]
@@ -65,7 +65,10 @@ impl Config {
     }
 
     pub fn get_primary_mensa(&self) -> Option<String>{
-        self.primary_mensa.clone()
+        let cfg = Self::load_config();
+        let p_mensa = cfg.primary_mensa;
+        println!("{:?}", p_mensa);
+        p_mensa
     }
 
     pub fn update_mensa_list(&mut self, mensa_to_add: String) {
@@ -151,7 +154,7 @@ impl Config {
 
 //Json Parser
     fn struct_from_json_file(/*path: &str*/ json_config: &String) -> Result<Config, Box<dyn std::error::Error>> {
-
+        let search_offset: usize = 4;
         //let mut config = Config::new();
 
         //let config_content_raw = fs::read_to_string(path)?;
@@ -161,9 +164,11 @@ impl Config {
         //Whitespace, Leerzeichen und Zeilenumbrüche entfernen
         let config_content_cleaned =  config_content_raw
                                             .chars()
-                                            .filter(|c| !c.is_whitespace()) 
+                                            //.filter(|c| !c.is_whitespace()) 
                                             .collect::<String>();
         
+        //println!("{config_content_cleaned}");
+
         //End index, der gesucht berechnen:
         let pm_end = config_content_cleaned.find(ConfigName::primary_mensa.as_str()).unwrap() + ConfigName::primary_mensa.as_str().len();
         let ml_end = config_content_cleaned.find(ConfigName::mensa_list.as_str()).unwrap() + ConfigName::mensa_list.as_str().len();
@@ -173,47 +178,95 @@ impl Config {
 
         //Inhalt der primary mensa extrahieren:
 
-        let primary_mensa= config_content_cleaned[pm_end+3..pm_end+3 + config_content_cleaned[pm_end+3..].find('"').unwrap()].to_string();
+        let slice = &config_content_cleaned[pm_end + search_offset..];
+        let pm = slice.find('"').map(|end| {
+            slice[..end].to_string()
+        });
 
+        let primary_mensa = match pm {
+            Some(pm_str) => format!("{}", pm_str),
+            None => "null".to_string(), // oder "" wenn du leeren String willst
+        };
+        
+        println!("{:?}", primary_mensa);
         //Inhalt der mensa list extrahieren:
 
-        let mensa_list_all =  &config_content_cleaned[ml_end+3..ml_end+3 + config_content_cleaned[ml_end+3..].find(']').unwrap()];
+        let slice = &config_content_cleaned[ml_end + search_offset..];
+        let mensa_list_all = slice.find(']').map(|end| {&slice[..end]});
 
-        let  mensa_list: Vec<String> = mensa_list_all
+        let mensa_list_all = match mensa_list_all {
+            Some(list) => list,
+            None => "", // oder ein anderer Default-Wert
+        };
+
+
+
+        let mut mensa_list: Vec<String> = mensa_list_all
                                             .chars()
                                             .filter(|&c| c != '"')
                                             .collect::<String>()
                                             .split(',')
                                             .map(|s| s.to_string())
                                             .collect();
+        println!("{:?}", mensa_list);
+
+        if mensa_list.first().map_or(false, |s| s.is_empty()) {
+            mensa_list.remove(0);
+        };
 
         //Inhalt der Occupation extrahieren:
 
-        let occupations_string= &config_content_cleaned[op_end+3..op_end+3 + config_content_cleaned[op_end+3..].find('"').unwrap()].to_string();
-        let occupations = Occupations::from_str(occupations_string);
+        let slice = &config_content_cleaned[op_end + search_offset..];
+        let occupations_string = slice.find('"').map(|end| {slice[..end].to_string()});
+        let occupations = match occupations_string {
+            Some(s) => Occupations::from_str(&s),
+            None => Some(Occupations::Employee), // oder wie du standardmäßig damit umgehen möchtest
+        };
 
+
+        println!("{:?}", occupations);
         //Inhalt der Extras extrahieren:
-        let extra_list_all =  &config_content_cleaned[et_end+3..et_end+3 + config_content_cleaned[et_end+3..].find(']').unwrap()];
+        let extra_list_all =  &config_content_cleaned[et_end+search_offset..et_end+search_offset + config_content_cleaned[et_end+search_offset..].find(']').unwrap()];
 
-        let extra_list: Vec<Extras> = extra_list_all
+        let mut extra_list_string: Vec<String> = extra_list_all
                                             .chars()
                                             .filter(|&c| c != '"')
                                             .collect::<String>()
                                             .split(',')
                                             .map(|s| s.to_string())
-                                            .map(|e| Extras::from_str(&e))
+                                            //.map(|e| Extras::from_str(&e))
                                             .collect();
+        
+        if extra_list_string.first().map_or(false, |s| s.is_empty()) {
+            extra_list_string.remove(0);
+        };
 
+        let extra_list:Vec<Extras> = extra_list_string.into_iter().map(|e| Extras::from_str(&e)).collect();
+        println!("{:?}", extra_list);
+
+        
+        
         //Inhalte der Events extrahieren:
-        let event_list_all =  &config_content_cleaned[ev_end+3..ev_end+3 + config_content_cleaned[ev_end+3..].find(']').unwrap()];
-        let event_list: Vec<String> = event_list_all
-                                            .chars()
-                                            .filter(|&c| c != '"')
-                                            .collect::<String>()
-                                            .split(',')
-                                            .map(|s| s.to_string())
-                                            .collect();
+        let slice = &config_content_cleaned[ev_end + search_offset..];
+        let event_list_all = slice.find(']').map(|end| {&slice[..end]});
 
+        let mut event_list: Vec<String> = match event_list_all {
+            Some(raw) => raw
+                .chars()
+                .filter(|&c| c != '"')
+                .collect::<String>()
+                .split(',')
+                .map(|s| s.trim().to_string()) // trim() für Sicherheit
+                .collect(),
+            None => Vec::new(), // Fallback: leere Liste
+        };
+
+        if event_list.first().map_or(false, |s| s.is_empty()) {
+            event_list.remove(0);
+        };
+
+
+        println!("{:?}", event_list);
         //Config zurückkgeben:
         Ok(Config { primary_mensa: Some(primary_mensa),
                     mensa_list: Some(mensa_list),
@@ -231,12 +284,13 @@ impl Config {
             None => "null".to_string(), // oder "" falls du leere Strings willst
         };
 
-        let mut mensa_list:String = config.mensa_list
+        let mut mensa_list = config.mensa_list
                                                         .iter()
                                                         .map(|s|  format!("{:?}", s))
                                                         .collect::<Vec<String>>()            // in Vec sammeln
                                                         .join(", ");                                      
     
+
         let occupations = match &config.occupation {
             Some(occ) => format!("\"{:?}\"", occ),
             None => "null".to_string(), // oder "" falls du leere Strings willst
@@ -296,7 +350,7 @@ impl Extras {
             Extras::LambFree => "Lambfree",
             Extras::PigFree => "Pigfree",
             Extras::PoultryFree => "Poultryfree",
-            Extras::Other(_) => "Other",
+            Extras::Unknown => "Unknown"
         }
     }
 
@@ -312,7 +366,7 @@ impl Extras {
             ref s if s == "Lambfree" => Extras::LambFree,
             ref s if s == "Pigfree" => Extras::PigFree,
             ref s if s == "Poultryfree" => Extras::PoultryFree,
-            other => Extras::Other(other),
+            _ => Extras::Unknown,
         }
 }
 
