@@ -11,7 +11,7 @@ use crate::json_parser::Extras;
 #[derive(Debug, Hash, PartialEq, Eq)]
 pub struct Meta {
     pub department: String,
-    pub nodule: String,
+    pub modules: String,
 }
 
 pub trait Event: Sized {
@@ -25,6 +25,8 @@ pub trait Event: Sized {
         Self::load_from_local(department, module, cache_dir)
             .or_else(|_| Self::fetch_event_for_module(department, module))
     }
+
+    fn get_event_for_date(event_descriptor: Vec<Meta>, date: NaiveDate) -> Result<Vec<Self>, Box<dyn Error>>;
 
     /// Local loading ///
 
