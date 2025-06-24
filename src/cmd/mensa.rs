@@ -1,3 +1,5 @@
+use std::thread;
+
 use crate::cmd::mensa_settings;
 use crate::mensa::meal::Meal;
 use crate::mensa::haw_meal::HawMeal;
@@ -52,7 +54,13 @@ enum MensaCommands {
 
 impl Cmd {
     pub fn run(self) -> Result<(), Box<dyn std::error::Error>> {
-        // TODO: Load cache in parallel
+        let handle = thread::spawn(|| {
+            let cache_dir = dirs::cache_dir().expect("Could not find cache directory");
+            match HawMeal::fetch_mensa_data(&cache_dir) {
+                Ok(_) => {},
+                Err(e) => println!("Error updating mensa data: {}", e),
+            };
+        });
 
         let currentdate = chrono::Local::now().date_naive();
 
@@ -78,6 +86,11 @@ impl Cmd {
             None => {
                 self.date_command(&Some(MensaCommands::Today { number: self.number }), currentdate);
             }
+        }
+
+        if !handle.is_finished() {
+            println!("\nWaiting for mensa data update to finish...");
+            let _ = handle.join();
         }
 
         Ok(())
