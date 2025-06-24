@@ -65,11 +65,7 @@ impl Config {
     }
 
     pub fn get_primary_mensa(&self) -> Option<String>{
-        let cfg = Self::load_config();
-        let p_mensa = cfg.primary_mensa;
-        
-
-        p_mensa
+        self.primary_mensa.clone()
     }
 
     pub fn update_mensa_list(&mut self, mensa_to_add: String) {
@@ -115,6 +111,7 @@ impl Config {
     }
 
     pub fn load_config() -> Config {
+        print!("LOAD");
         let path = dirs::config_local_dir()
                 .unwrap()
                 .join("hawhhcalendarbot/cfg.json");
