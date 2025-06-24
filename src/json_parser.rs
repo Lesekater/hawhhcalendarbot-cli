@@ -10,7 +10,7 @@ pub(crate) enum Occupations {
 #[derive(Debug)]
 pub(crate) enum Extras {
     Vegan,
-    Vegetarisch,
+    Vegetarian,
     LactoseFree,
     Alcohol,
     BeefFree,
@@ -330,7 +330,7 @@ impl Extras {
     pub fn as_str(&self) -> &str {
         match self {
             Extras::Vegan => "Vegan",
-            Extras::Vegetarisch => "Vegetarisch",
+            Extras::Vegetarian => "Vegetarian",
             Extras::LactoseFree => "LactoseFree",
             Extras::Alcohol => "Alcohol",
             Extras::BeefFree => "Beeffree",
@@ -346,7 +346,7 @@ impl Extras {
    pub fn from_str(s: &str) -> Extras {
         match Self::capitalize_first(s) {
             ref s if s == "Vegan" => Extras::Vegan,
-            ref s if s == "Vegetarisch" => Extras::Vegetarisch,
+            ref s if s == "Vegetarisch" => Extras::Vegetarian,
             ref s if s == "Lactosefree" => Extras::LactoseFree,
             ref s if s == "Alcohol" => Extras::Alcohol,
             ref s if s == "Beeffree" => Extras::BeefFree,

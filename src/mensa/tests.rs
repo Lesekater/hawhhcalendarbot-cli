@@ -110,7 +110,7 @@ use std::io;
         meal2.contents.beef = true;
         meal2.contents.vegetarian = false;
         meal2.contents.vegan = false;
-        let extras = vec![Extras::Vegan, Extras::Vegetarisch];
+        let extras = vec![Extras::Vegan, Extras::Vegetarian];
 
         // act
         let filtered_meals = Meal::filter_food_by_extras(vec![meal, meal2], &extras);
