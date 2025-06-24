@@ -67,7 +67,8 @@ impl Config {
     pub fn get_primary_mensa(&self) -> Option<String>{
         let cfg = Self::load_config();
         let p_mensa = cfg.primary_mensa;
-        println!("{:?}", p_mensa);
+        
+
         p_mensa
     }
 
@@ -114,11 +115,9 @@ impl Config {
     }
 
     pub fn load_config() -> Config {
-        println!("Config geladen!");
         let path = dirs::config_local_dir()
                 .unwrap()
                 .join("hawhhcalendarbot/cfg.json");
-        println!("Pfad: {:?}", path);
         match fs::read_to_string(path,
         ) {
             Ok(json_config) => Config::struct_from_json_file(&json_config).expect("Fehler beim Parsen der JSON"),
@@ -140,7 +139,6 @@ impl Config {
         json_string,
         )
         .expect("Fehler beim Schreiben der Datei");
-        println!("Config gespeichert!")
     }
 
 //Hilfs funktionen:
@@ -167,7 +165,6 @@ impl Config {
                                             //.filter(|c| !c.is_whitespace()) 
                                             .collect::<String>();
         
-        //println!("{config_content_cleaned}");
 
         //End index, der gesucht berechnen:
         let pm_end = config_content_cleaned.find(ConfigName::primary_mensa.as_str()).unwrap() + ConfigName::primary_mensa.as_str().len();
@@ -188,7 +185,6 @@ impl Config {
             None => "null".to_string(), // oder "" wenn du leeren String willst
         };
         
-        println!("{:?}", primary_mensa);
         //Inhalt der mensa list extrahieren:
 
         let slice = &config_content_cleaned[ml_end + search_offset..];
@@ -208,7 +204,6 @@ impl Config {
                                             .split(',')
                                             .map(|s| s.to_string())
                                             .collect();
-        println!("{:?}", mensa_list);
 
         if mensa_list.first().map_or(false, |s| s.is_empty()) {
             mensa_list.remove(0);
@@ -224,7 +219,6 @@ impl Config {
         };
 
 
-        println!("{:?}", occupations);
         //Inhalt der Extras extrahieren:
         let extra_list_all =  &config_content_cleaned[et_end+search_offset..et_end+search_offset + config_content_cleaned[et_end+search_offset..].find(']').unwrap()];
 
@@ -242,7 +236,6 @@ impl Config {
         };
 
         let extra_list:Vec<Extras> = extra_list_string.into_iter().map(|e| Extras::from_str(&e)).collect();
-        println!("{:?}", extra_list);
 
         
         
@@ -266,7 +259,6 @@ impl Config {
         };
 
 
-        println!("{:?}", event_list);
         //Config zurückkgeben:
         Ok(Config { primary_mensa: Some(primary_mensa),
                     mensa_list: Some(mensa_list),
