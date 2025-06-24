@@ -14,7 +14,7 @@ pub struct Meta {
     pub nodule: String,
 }
 
-pub trait Meal: Sized {
+pub trait Event: Sized {
     //// Fetching data ////
 
     fn get_event_for_module(department: &str, module: &str) -> Result<Vec<Self>, Box<dyn Error>> {

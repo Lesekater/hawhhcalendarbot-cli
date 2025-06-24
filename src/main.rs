@@ -28,6 +28,7 @@
 */
 
 mod mensa;
+mod events;
 mod cmd;
 //mod config_managment;
 
