@@ -38,6 +38,16 @@ pub enum SettingsCommands {
         /// The extras to set
         extras: String,
     },
+    /// Sets the username for the MuP Plan site
+    Username {
+        /// The username to set
+        username: String,
+    },
+    /// Sets the password for the MuP Plan site
+    Password {
+        /// The password to set
+        password: String,
+    },
 }
 
 impl Cmd {
@@ -104,6 +114,28 @@ impl Cmd {
 
                 cfg.add_extra(e);
                 
+                Config::save_config_json(&cfg);
+
+                Ok(())
+            } 
+            SettingsCommands::Username { username } => {
+                println!("Setting Username to: {}", username);
+
+                let mut cfg = Config::load_config();
+                cfg.update_username(username);
+
+                Config::save_config_json(&cfg);
+                Ok(())
+            }
+            SettingsCommands::Password { password } => {
+                println!("Setting Password to: {}", password);
+
+                let mut cfg = Config::load_config();
+
+                //todo!("Passwort verschlüsselung einbauen");
+
+                cfg.update_password(password);
+
                 Config::save_config_json(&cfg);
 
                 Ok(())

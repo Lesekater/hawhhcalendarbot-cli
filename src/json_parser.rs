@@ -117,6 +117,22 @@ impl Config {
         self.extras.as_ref()
     }
 
+    pub fn update_username(&mut self, username: String) {
+        self.vusername = Some(username);
+    }
+
+    pub fn get_username(&self) -> Option<String>{
+        self.vusername.clone()
+    }
+
+    pub fn update_password(&mut self, password: String) {
+        self.vpassword = Some(password);
+    }
+
+    pub fn get_password(&self) -> Option<String>{
+        self.vpassword.clone()
+    }
+
     pub fn load_config() -> Config {
         let path = dirs::config_local_dir()
                 .unwrap()
@@ -346,7 +362,7 @@ impl Config {
             None => "null".to_string(), // oder "" falls du leere Strings willst
         };
 
-        let json_string = format!("{{ \n   \"{}\": {},\n   \"{}\": {},\n   \"{}\": {},\n   \"{}\": {},\n   \"{}\": {}\n   \"{}\": {}\n   \"{}\": {}\n}}", ConfigName::primary_mensa.as_str(), primary_mensa, ConfigName::mensa_list.as_str(), mensa_list, ConfigName::occupation.as_str(), occupations, ConfigName::extras.as_str(), extra_list, ConfigName::events.as_str(), event_list, ConfigName::vusername.as_str(), username, ConfigName::vpassword.as_str(), password);
+        let json_string = format!("{{ \n   \"{}\": {},\n   \"{}\": {},\n   \"{}\": {},\n   \"{}\": {},\n   \"{}\": {},\n   \"{}\": {},\n   \"{}\": {}\n}}", ConfigName::primary_mensa.as_str(), primary_mensa, ConfigName::mensa_list.as_str(), mensa_list, ConfigName::occupation.as_str(), occupations, ConfigName::extras.as_str(), extra_list, ConfigName::events.as_str(), event_list, ConfigName::vusername.as_str(), username, ConfigName::vpassword.as_str(), password);
 
         //fs::write(path, json_string)?;
 
