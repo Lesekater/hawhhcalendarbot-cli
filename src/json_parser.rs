@@ -29,6 +29,8 @@ pub(crate) enum ConfigName {
     occupation,
     extras,
     events,
+    vusername,
+    vpassword,
 }
 
 
@@ -39,6 +41,8 @@ pub struct Config {
     occupation: Option<Occupations>,
     extras: Option<Vec<Extras>>,
     events: Option<Vec<String>>,
+    vusername: Option<String>,
+    vpassword: Option<String>,
 }
 
 /*
@@ -55,6 +59,9 @@ impl Config {
             occupation: None,
             extras: Some(Vec::new()),
             events: Some(Vec::new()),
+            //Login V-Kennung:
+            vusername: Some(String::new()),
+            vpassword: Some(String::new()),
         }
 
     }
@@ -168,6 +175,8 @@ impl Config {
         let op_end = config_content_cleaned.find(ConfigName::occupation.as_str()).unwrap() + ConfigName::occupation.as_str().len();
         let et_end = config_content_cleaned.find(ConfigName::extras.as_str()).unwrap() + ConfigName::extras.as_str().len();
         let ev_end = config_content_cleaned.find(ConfigName::events.as_str()).unwrap() + ConfigName::events.as_str().len();
+        let un_end = config_content_cleaned.find(ConfigName::vusername.as_str()).unwrap() + ConfigName::vusername.as_str().len();
+        let up_end = config_content_cleaned.find(ConfigName::vpassword.as_str()).unwrap() + ConfigName::vpassword.as_str().len();
 
         //Inhalt der primary mensa extrahieren:
 
@@ -254,13 +263,37 @@ impl Config {
             event_list.remove(0);
         };
 
+        //Inhalt des Usernames extrahieren:
+
+        let slice = &config_content_cleaned[un_end + search_offset..];
+        let un = slice.find('"').map(|end| {
+            slice[..end].to_string()
+        });
+
+        let username = match un {
+            Some(un_str) => format!("{}", un_str),
+            None => "null".to_string(), // oder "" wenn du leeren String willst
+        };
+
+        let slice = &config_content_cleaned[up_end + search_offset..];
+        let up = slice.find('"').map(|end| {
+            slice[..end].to_string()
+        });
+
+        let password = match up {
+            Some(up_str) => format!("{}", up_str),
+            None => "null".to_string(), // oder "" wenn du leeren String willst
+        };
+
 
         //Config zurückkgeben:
         Ok(Config { primary_mensa: Some(primary_mensa),
                     mensa_list: Some(mensa_list),
                     occupation: (occupations),
                     extras: Some(extra_list),
-                    events: Some(event_list)
+                    events: Some(event_list),
+                    vusername: Some(username),
+                    vpassword: Some(password)
                 })
 
     }
@@ -303,7 +336,17 @@ impl Config {
                                                         .collect::<Vec<String>>()            // in Vec sammeln
                                                         .join(", "); 
 
-        let json_string = format!("{{ \n   \"{}\": {},\n   \"{}\": {},\n   \"{}\": {},\n   \"{}\": {},\n   \"{}\": {}\n}}", ConfigName::primary_mensa.as_str(), primary_mensa, ConfigName::mensa_list.as_str(), mensa_list, ConfigName::occupation.as_str(), occupations, ConfigName::extras.as_str(), extra_list, ConfigName::events.as_str(), event_list);
+        let username = match &config.vusername {
+            Some(un) => format!("\"{}\"", un),
+            None => "null".to_string(), // oder "" falls du leere Strings willst
+        };
+
+        let password = match &config.vpassword {
+            Some(up) => format!("\"{}\"", up),
+            None => "null".to_string(), // oder "" falls du leere Strings willst
+        };
+
+        let json_string = format!("{{ \n   \"{}\": {},\n   \"{}\": {},\n   \"{}\": {},\n   \"{}\": {},\n   \"{}\": {}\n   \"{}\": {}\n   \"{}\": {}\n}}", ConfigName::primary_mensa.as_str(), primary_mensa, ConfigName::mensa_list.as_str(), mensa_list, ConfigName::occupation.as_str(), occupations, ConfigName::extras.as_str(), extra_list, ConfigName::events.as_str(), event_list, ConfigName::vusername.as_str(), username, ConfigName::vpassword.as_str(), password);
 
         //fs::write(path, json_string)?;
 
@@ -370,6 +413,8 @@ impl ConfigName {
             ConfigName::occupation => "occupation",
             ConfigName::extras => "extras",
             ConfigName::events => "events",
+            ConfigName::vusername => "vusername",
+            ConfigName::vpassword => "vpassword",
         }
     }
 }
