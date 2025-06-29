@@ -27,6 +27,7 @@
  * 
 */
 
+#![feature(mpmc_channel)]
 mod mensa;
 mod cmd;
 //mod config_managment;
