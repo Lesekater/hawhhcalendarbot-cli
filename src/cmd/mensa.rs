@@ -54,12 +54,7 @@ enum MensaCommands {
 
 impl Cmd {
     pub fn run(self) -> Result<(), Box<dyn std::error::Error>> {
-        let handle = thread::spawn(|| {
-            match HawMeal::update_mensa_data() {
-                Ok(_) => {},
-                Err(e) => println!("Error updating mensa data: {}", e),
-            };
-        });
+        let handle = HawMeal::update_mensa_data();
 
         let currentdate = chrono::Local::now().date_naive();
 

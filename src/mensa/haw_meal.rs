@@ -1,4 +1,4 @@
-use std::{collections::BTreeMap, error::Error, fmt, fs::{self, File}, io::{Read, Write}, path::{Path, PathBuf}, process::Command};
+use std::{collections::BTreeMap, fmt, fs::{self, File}, io::{Read, Write}, path::{Path, PathBuf}, process::Command};
 
 use chrono::NaiveDate;
 use regex::Regex;
@@ -53,16 +53,16 @@ impl Meal for HawMeal {
         &self.contents
     }
 
-    fn load_from_local(date: NaiveDate, mensa_name: &str, cache_dir: PathBuf) -> Result<Vec<Self>, Box<dyn Error>> {
+    fn load_from_local(date: NaiveDate, mensa_name: &str, cache_dir: PathBuf) -> Result<Vec<Self>, std::io::Error> {
         // Read timestamp of local mensa data
-        let cache_dir_str = cache_dir.to_str().ok_or("Cache directory path is not valid")?;
+        let cache_dir_str = cache_dir.to_str().ok_or(std::io::Error::new(std::io::ErrorKind::InvalidInput, "Cache directory path is not valid"))?;
         let mut file: File = File::open(format!("{}/mensadata/timestamp", &cache_dir_str))?;
         let mut contents = String::new();
-        
         file.read_to_string(&mut contents)?;
-        let last_change = chrono::DateTime::from_timestamp(contents.parse()?, 0).unwrap();
+        let timestamp = contents.trim().parse::<i64>().map_err(|e| std::io::Error::new(std::io::ErrorKind::InvalidData, e))?;
+        let last_change = chrono::DateTime::from_timestamp(timestamp, 0).unwrap();
         let last_change_date = last_change.date_naive();
-        
+
         // If the data is older than 1 day, fetch new data
         if chrono::Local::now().date_naive().signed_duration_since(last_change_date) > chrono::Duration::days(1) {
             println!("Local mensa data is outdated. Fetching new data...");
@@ -73,7 +73,7 @@ impl Meal for HawMeal {
         let mensadata_path = Self::get_mensadata_dir(&cache_dir)?;
 
         if !mensadata_path.exists() {
-            return Err(format!("Local mensa data not available at {:?}", mensadata_path).into());
+            return Err(std::io::Error::new(std::io::ErrorKind::NotFound, format!("Local mensa data not available at {:?}", mensadata_path)));
         }
         
         let path_str = format!("./{}/{}/{}/{}.json",
@@ -85,7 +85,7 @@ impl Meal for HawMeal {
         let path = Path::join(&mensadata_path, Path::new(&path_str));
 
         if !path.exists() {
-            return Err(format!("No data found for mensa '{}' on date '{}'", &mensa_name, date).into());
+            return Err(std::io::Error::new(std::io::ErrorKind::NotFound, format!("No data found for mensa '{}' on date '{}'", &mensa_name, date)));
         }
 
         // Read data
@@ -94,7 +94,7 @@ impl Meal for HawMeal {
         Ok(serde_json::from_str(&file_content)?)
     }
 
-    fn fetch_data_for_date(date: NaiveDate, mensa_name: &str) -> Result<Vec<Self>, Box<dyn Error>> {
+    fn fetch_data_for_date(date: NaiveDate, mensa_name: &str) -> Result<Vec<Self>, std::io::Error> {
         let url = format!("{DATA_URL}/{}/{}/{}/{}.json",
             &mensa_name,
             &date.format("%Y"),
@@ -102,19 +102,20 @@ impl Meal for HawMeal {
             &date.format("%d")
         );
 
-        let result = reqwest::get(url)?;
+        let result = reqwest::get(url)
+            .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))?;
 
         // Handle HTTP errors
         if result.status().is_client_error() || result.status().is_server_error() {
-            return Err(result.status().to_string().into());
+            return Err(std::io::Error::new(std::io::ErrorKind::Other, result.status().to_string()));
         }
 
-        Ok(serde_json::from_str(&result.text()?)?)
+        Ok(serde_json::from_str(&result.text().map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))?)?)
     }
 
     /// Fetches Mensadata and stores it in the cache dir
     /// Fetch Mensa data from git repo (https://github.com/HAWHHCalendarBot/mensa-data.git) and save it locally
-    fn fetch_mensa_data(cache_dir: &PathBuf) -> Result<(), Box<dyn Error>> {
+    fn fetch_mensa_data(cache_dir: &PathBuf) -> Result<(), std::io::Error> {
         // Check locally if the data is available
         let mensadata_path = Self::get_mensadata_dir(&cache_dir)?;
 
@@ -138,7 +139,7 @@ impl Meal for HawMeal {
 
         if !output.status.success() {
             let error_message = String::from_utf8_lossy(&output.stderr);
-            return Err(format!("Failed to clone mensa data: {}", error_message).into());
+            return Err(std::io::Error::new(std::io::ErrorKind::Other, format!("Failed to clone mensa data: {}", error_message)));
         }
         
         // If the clone was successful, return Ok
