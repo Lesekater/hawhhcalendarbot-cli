@@ -2,6 +2,7 @@ use clap::{Parser, Subcommand};
 use crate::json_parser::Config;
 use crate::json_parser::Extras;
 use crate::json_parser::Occupations;
+use std::fs;
 
 #[derive(Debug, Parser)]
 pub struct Cmd {
@@ -48,6 +49,10 @@ pub enum SettingsCommands {
         /// The password to set
         password: String,
     },
+    /// Shows the Path to the Config.json file.
+    Config,
+
+    Delet,
 }
 
 impl Cmd {
@@ -137,6 +142,38 @@ impl Cmd {
                 cfg.update_password(password);
 
                 Config::save_config_json(&cfg);
+
+                Ok(())
+            }
+
+            SettingsCommands::Config {  } => {
+
+                let path = dirs::config_local_dir()
+                        .unwrap()
+                        .join("hawhhcalendarbot/cfg.json");
+
+                match fs::read_to_string(&path) {
+                    Ok(_) => println!("Config file is here: {}", path.display()),
+                    Err(_) => println!("No config file found!"),
+                }
+                
+
+                Ok(())
+            }
+
+            SettingsCommands::Delet {  } => {
+                let path = dirs::config_local_dir()
+                            .unwrap()
+                            .join("hawhhcalendarbot/cfg.json");
+
+                if path.exists() {
+                    match fs::remove_file(&path) {
+                        Ok(_) => println!("Config file deleted: {}", path.display()),
+                        Err(e) => eprintln!("Failed to delete config file: {}", e),
+                    }
+                } else {
+                    println!("No config file to delete.");
+                }
 
                 Ok(())
             }
