@@ -7,7 +7,7 @@ use reqwest::blocking as reqwest;
 
 use crate::{json_parser::Occupations, mensa::meal::{Contents, Meal, Prices}};
 
-const DATA_URL:&str = "https://raw.githubusercontent.com/HAWHHCalendarBot/mensa-data/refs/heads/main/";
+const DATA_URL:&str = "https://raw.githubusercontent.com/HAWHHCalendarBot/mensa-data/main";
 
 #[derive(Debug, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "PascalCase")]

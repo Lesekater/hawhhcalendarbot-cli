@@ -1,7 +1,6 @@
 use crate::cmd::mensa_settings;
 use crate::mensa::meal::Meal;
 use crate::mensa::haw_meal::HawMeal;
-//use crate::config_managment::load_config;
 use crate::json_parser::Config;
 use clap::{Parser, Subcommand};
 
