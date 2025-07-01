@@ -75,21 +75,21 @@ fn main()  -> Result<(), Box<dyn Error>> {
     let base_url = String::from("https://www.mp.haw-hamburg.de/auth/vorlesungsplan/");
     let urls = generat_url(&base_url, String::from("B_MT"), String::from(".php"), 7);
 
-/*
+
     for url in urls {
         let lecutres = scrape_lecute_plan(&login, url.clone())?;
         println!("{}", url);
         println!("{:#?}", lecutres);
     }
-     */
-    let lecutres = scrape_lecute_plan(&login, urls[5].clone())?;
-    println!("{:#?}", lecutres);
+      
+    //let lecutres = scrape_lecute_plan(&login, urls[1].clone())?;
+    //println!("{:#?}", lecutres);
 
     
 
     Ok(())
 }
- */
+  */
 
 /* Beispiel für Aufruf
 Base String: https://www.mp.haw-hamburg.de/auth/vorlesungsplan/
@@ -195,7 +195,8 @@ pub fn scrape_lecute_plan(login: &login_data, url: String) -> Result<Vec<Lecture
                 match parse_lecture_info(&content) {
                     Some(parsed_infos) => {
                         for (name, prof, location, discription) in parsed_infos {
-                            lecture_in_struct.push(Lecture {
+                            if name != "TEAMS" {
+                                lecture_in_struct.push(Lecture {
                                 name,
                                 location,
                                 description: Some(discription),
@@ -203,6 +204,9 @@ pub fn scrape_lecute_plan(login: &login_data, url: String) -> Result<Vec<Lecture
                                 end: None,
                                 hours: None,
                             });
+                            }
+                            
+                            
                         }
                     }
                     None => {
@@ -220,7 +224,9 @@ pub fn scrape_lecute_plan(login: &login_data, url: String) -> Result<Vec<Lecture
     Ok(lecture_in_struct)
 }
 
+/* alte Version, funktioniert so halb:
 fn parse_lecture_info(input: &str) -> Option<Vec<(String, String, String, String)>> {
+
     let parts: Vec<&str> = input.split_whitespace().collect();
 
     //println!("Input: {}", input);
@@ -333,8 +339,110 @@ fn parse_lecture_info(input: &str) -> Option<Vec<(String, String, String, String
     Some(output_vec)
 }
 
-/*
-Um die weitere Verarbeitung in dem HAWHHCalendarBot Cli zu vereinfachen, währe ein 
-Ausgabe in dem Kalenderformat .ics nützlich
-*/
-pub fn lecture_plan_to_ics(){}
+    */
+
+//neue Version, hoffentlich etwas besser:
+fn parse_lecture_info(input: &str) -> Option<Vec<(String, String, String, String)>> {
+    let parts: Vec<&str> = input.split_whitespace().collect();
+
+    if parts.len() < 3 {
+        return None; // nicht genug Infos
+    }
+
+    let re_location = Regex::new(r"BT(\d+)-(\d+(?:\.\d+)?)").ok()?;
+    let (loc_vec, loc_pos_vec): (Vec<_>, Vec<_>) = re_location
+        .find_iter(input)
+        .map(|m| (m.as_str().to_string(), m.end()))
+        .unzip();
+
+    let mut input_split: Vec<String> = {
+        let input = input;
+        loc_pos_vec
+            .iter()
+            .copied()
+            .chain(std::iter::once(input.len()))
+            .scan(0, move |start, end| {
+                let part = input[*start..end].to_string();
+                *start = end;
+                Some(part)
+            })
+            .collect()
+    };
+
+    for i in 0..input_split.len() {
+        let current = &input_split[i];
+
+        if re_location.find(current).is_none() && i > 0 {
+            let combined = format!("{} {}", input_split[i - 1], current);
+            input_split[i - 1] = combined;
+            input_split.remove(i);
+            break;
+        }
+    }
+
+    let mut output_vec: Vec<(String, String, String, String)> = Vec::new();
+
+    for classes in input_split {
+        let location = re_location.find(&classes)?.as_str().to_string();
+
+        // Prof-Regex
+        let le_prof = Regex::new(r"[A-Z][a-z]{2,3}").ok()?;
+        let prof_scope = &classes[..classes.len().min(60)];
+        let prof = le_prof.find(prof_scope)?.as_str().to_string();
+
+        // Namenspatterns
+        let patterns = [
+    r"\b[A-Z]{3} [LU]\b",               // RTT L, TM A U
+    r"\b[A-Z]{3}\.?",                   // RTT, WZM
+    r"[A-Z]+-\d",                       // MAT-1
+    r"[A-Z]+ \d(?: [A-Z])?",            // TM A, Kon 3, Kon 3 L
+    r"[A-Z]{2,4} [A-Z](?: [U])?",     // TM A, TM B U
+    r"[A-Z]+ [PM]",                     // Mkon P
+    r"\b[A-Z]{4,}\b",                   // ILOG, FLUIDT
+    r"\b[A-Z]{4,} L\b",                 // FLUIDT L
+    r"»?[A-Z]{4,}(?: L)?\.?",           // robuste Variante
+];
+
+
+        let vec_name_regex: Vec<Regex> = patterns
+            .iter()
+            .map(|pat| Regex::new(pat).ok())
+            .collect::<Option<Vec<_>>>()?;
+
+        // Eingrenzung auf ersten Teil der Zeichenkette
+        let search_scope = classes.split_whitespace().take(7).collect::<Vec<_>>().join(" ");
+
+        println!("eingegrenzte Suche: {}", search_scope);
+
+        let mut all_matches: Vec<&str> = vec_name_regex
+            .iter()
+            .filter_map(|re| {
+                re.find(&search_scope).map(|m| m.as_str())
+            })
+            .collect();
+
+        // Längsten Match wählen
+        all_matches.sort_by_key(|m| -(m.len() as isize));
+        let name = all_matches.first().cloned().unwrap_or("").to_string();
+
+        //println!("Vorlesungsname: {}", name);
+
+        //let description: String = String::new(); // noch leer
+        let mut description = classes.to_string();
+        description = description.replace(&name, "");
+        description = description.replace(&prof, "");
+        description = description.replace(&location, "");
+        description = description.trim().to_string();
+        
+        let dis = format!("Professor: {} \n weiter Informationen: {}", prof, description);
+
+        //let re_extra_info = Regex::new(r"\d)").ok()?;
+        //let extra_info = re_extra_info.find(&description);
+        //println!("Extra Info: {:?}", extra_info);
+
+        output_vec.push((name, prof, location, dis));
+        //println!("Infos vor dem Matchen: {:?}", output_vec);
+    }
+
+    Some(output_vec)
+}
