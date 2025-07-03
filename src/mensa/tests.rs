@@ -120,49 +120,44 @@ use std::io;
     }
 
     #[test]
-    fn test_filter_food_by_extras_single() {
+    fn test_filter_food_by_extra() {
         // arrange
         let meal = standard_meal();
-        let extras = vec![Extras::Vegan];
-        let result = Meal::filter_food_by_extras_single(&meal, &extras);
-        assert!(result, "Meal should match the vegan extra filter");
-        let non_matching_extras = vec![Extras::Alcohol];
 
         // act
-        let result_non_matching = Meal::filter_food_by_extras_single(&meal, &non_matching_extras);
+        let result_non_matching = Meal::filter_food_by_extra(&meal, &Extras::Alcohol);
 
         // assert
         assert!(!result_non_matching, "Meal should not match the alcohol extra filter");
     }
 
     #[test]
-    fn test_empty_extras() {
-        // arrange
-        let meal = standard_meal();
-        let extras = vec![];
-
-        // act
-        let result = Meal::filter_food_by_extras_single(&meal, &extras);
-
-        // assert
-        assert!(result, "Meal should match when no extras are specified");
-    }
-
-    #[test]
-    fn test_negative_extras() {
+    fn test_negative_extra() {
         // arrange
         let mut meal = standard_meal();
         meal.contents.alcohol = true;
         meal.contents.fish = true;
         meal.contents.vegetarian = false;
         meal.contents.vegan = false;
-        let extras = vec![Extras::Fish];
 
         // act
-        let result = Meal::filter_food_by_extras_single(&meal, &extras);
+        let result = Meal::filter_food_by_extra(&meal, &Extras::Fish);
 
         // assert
         assert!(!result, "Meal should not match the fish-free extra filter");
+    }
+
+    #[test]
+    fn test_empty_extras() {
+        // arrange
+        let meals = vec!(standard_meal());
+        let extras = vec![];
+
+        // act
+        let result = Meal::filter_food_by_extras(meals, &extras);
+
+        // assert
+        assert_eq!(result, vec!(standard_meal()), "Filtered meals should match the original meals when no extras are specified");
     }
 
     ///////// Test data format
