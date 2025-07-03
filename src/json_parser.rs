@@ -263,7 +263,7 @@ impl Config {
                                             .filter(|&c| c != '"')
                                             .collect::<String>()
                                             .split(',')
-                                            .map(|s| s.to_string())
+                                            .map(|s| s.trim().to_string())
                                             //.map(|e| Extras::from_str(&e))
                                             .collect();
         
@@ -385,7 +385,7 @@ impl Extras {
    pub fn from_str(s: &str) -> Extras {
         match Self::capitalize_first(s) {
             ref s if s == "Vegan" => Extras::Vegan,
-            ref s if s == "Vegetarisch" => Extras::Vegetarian,
+            ref s if s == "Vegetarian" => Extras::Vegetarian,
             ref s if s == "Lactosefree" => Extras::LactoseFree,
             ref s if s == "Alcohol" => Extras::Alcohol,
             ref s if s == "Beeffree" => Extras::BeefFree,
