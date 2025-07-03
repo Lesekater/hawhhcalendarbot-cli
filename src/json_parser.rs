@@ -81,6 +81,8 @@ impl clone::Clone for Config {
             occupation: self.occupation.clone(),
             extras: self.extras.clone(),
             events: self.events.clone(),
+            vusername: self.vusername.clone(),
+            vpassword: self.vpassword.clone(),
         }
     }
 }
