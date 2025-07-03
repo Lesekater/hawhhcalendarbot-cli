@@ -1,6 +1,7 @@
+use std::fmt::Debug;
 use std::path::PathBuf;
-use std::thread::JoinHandle;
-use std::thread;
+use std::sync::mpsc;
+use std::{thread, thread::JoinHandle};
 
 use chrono::NaiveDate;
 use dirs::cache_dir;
@@ -15,7 +16,7 @@ pub struct Meta {
     pub date: NaiveDate,
 }
 
-pub trait Meal: Sized {
+pub trait Meal: Sized + Debug {
 
     //// Getter ////
     fn get_contents(&self) -> &Contents;
@@ -88,39 +89,83 @@ pub trait Meal: Sized {
     }
 
     fn filter_food_by_extras(
-        mut food: Vec<Self>,
+        foods: Vec<Self>,
         extras: &Vec<Extras>,
-    ) -> Vec<Self> {
-        food.retain(|meal| {
-            Self::filter_food_by_extras_single(meal, extras)
-        });
+    ) -> Vec<Self> where Self: Sized + Send + 'static {
 
-        food
-    }
-
-    fn filter_food_by_extras_single(
-        food: &Self,
-        extras: &Vec<Extras>,
-    ) -> bool {
         if extras.is_empty() {
-            return true; // If no extras are specified, keep the food item
+            return foods;
         }
-        
-        // Check if the food item has any of the specified extras
-        for extra in extras {
-            let contains = food.get_contents().to_string().contains(&extra.as_str());
-            match extra {
-                // POSITIVE EXTRAS
-                Extras::Vegan | Extras::Vegetarian | Extras::LactoseFree | Extras::Alcohol => {
-                    if !contains {
-                        return false; // If the food does not contain the extra, skip it
+
+        let mut senders = Vec::new();
+        let mut receivers = Vec::new();
+
+        // +1 because the last receiver collects the filtered food
+        for _ in 0..extras.len() + 1 {
+            let (tx, rx) = mpsc::channel::<Self>();
+            senders.push(tx);
+            receivers.push(rx);
+        }
+
+        // Spawn filter threads
+        let mut handles = Vec::new();
+        for filter in extras.iter().cloned() {
+
+            let rx= receivers.remove(0);
+            let tx = senders.remove(1);
+
+            // Filter threads
+            handles.push(thread::spawn(move || {
+                // println!("Thread {} for extra {:?}", i, filter);
+                for food in rx {
+                    if Self::filter_food_by_extra(&food, &filter) {
+                        // println!("Thread {} for extra {:?} sending food: {:?}", i, filter, food.get_title());
+                        let _ = tx.send(food);
                     }
                 }
-                // NEGATIVE EXTRAS
-                _ => {
-                    if contains {
-                        return false; // If the food contains a negative extra, skip it
-                    }
+            }));
+        }
+
+        // Send Food into filter chain
+        let sender = senders.remove(0);
+        for food in foods {
+            let _ = sender.send(food);
+        }
+
+        // drop sender to close the channel
+        drop(sender);
+
+        // Collect food
+        let filtered: Vec<Self> = receivers[0].iter().map(|food| {
+            // println!("Collecting food: {:?}", food.get_title());
+            food
+        }).collect();
+
+        // Wait for threads to finish
+        for handle in handles {
+            let _ = handle.join();
+        }
+
+        filtered
+    }
+
+    fn filter_food_by_extra(
+        food: &Self,
+        extra: &Extras,
+    ) -> bool {
+        // Check if the food item has any of the specified extras
+        let contains = food.get_contents().to_string().contains(&extra.as_str());
+        match extra {
+            // POSITIVE EXTRAS
+            Extras::Vegan | Extras::Vegetarian | Extras::LactoseFree | Extras::Alcohol => {
+                if !contains {
+                    return false; // If the food does not contain the extra, skip it
+                }
+            }
+            // NEGATIVE EXTRAS
+            _ => {
+                if contains {
+                    return false; // If the food contains a negative extra, skip it
                 }
             }
         }
