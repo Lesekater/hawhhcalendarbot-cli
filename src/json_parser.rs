@@ -1,4 +1,4 @@
-use std::{fmt::{format, Error}, fs::{self, File}, vec};
+use std::{clone, fmt::{format, Error}, fs::{self, File}, vec};
 
 #[derive(Debug)]
 pub(crate) enum Occupations {
@@ -22,6 +22,34 @@ pub(crate) enum Extras {
     Unknown,
 }
 
+impl clone::Clone for Occupations {
+    fn clone(&self) -> Self {
+        match self {
+            Occupations::Student => Occupations::Student,
+            Occupations::Employee => Occupations::Employee,
+            Occupations::Guest => Occupations::Guest,
+        }
+    }
+}
+
+impl clone::Clone for Extras {
+    fn clone(&self) -> Self {
+        match self {
+            Extras::Vegan => Extras::Vegan,
+            Extras::Vegetarian => Extras::Vegetarian,
+            Extras::LactoseFree => Extras::LactoseFree,
+            Extras::Alcohol => Extras::Alcohol,
+            Extras::BeefFree => Extras::BeefFree,
+            Extras::Fish => Extras::Fish,
+            Extras::GelatineFree => Extras::GelatineFree,
+            Extras::LambFree => Extras::LambFree,
+            Extras::PigFree => Extras::PigFree,
+            Extras::PoultryFree => Extras::PoultryFree,
+            Extras::Unknown => Extras::Unknown,
+        }
+    }
+}
+
 #[derive(Debug)]
 pub(crate) enum ConfigName {
     primary_mensa,
@@ -43,6 +71,18 @@ pub struct Config {
     events: Option<Vec<String>>,
     vusername: Option<String>,
     vpassword: Option<String>,
+}
+
+impl clone::Clone for Config {
+    fn clone(&self) -> Self {
+        Config {
+            primary_mensa: self.primary_mensa.clone(),
+            mensa_list: self.mensa_list.clone(),
+            occupation: self.occupation.clone(),
+            extras: self.extras.clone(),
+            events: self.events.clone(),
+        }
+    }
 }
 
 /*

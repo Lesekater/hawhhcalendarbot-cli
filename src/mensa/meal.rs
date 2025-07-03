@@ -1,5 +1,6 @@
 use std::path::PathBuf;
-use std::error::Error;
+use std::thread::JoinHandle;
+use std::thread;
 
 use chrono::NaiveDate;
 use dirs::cache_dir;
@@ -21,7 +22,7 @@ pub trait Meal: Sized {
 
     //// Fetching data ////
 
-    fn get_food_for_date(date: NaiveDate, mensa_name: &str) -> Result<Vec<Self>, Box<dyn Error>> {
+    fn get_food_for_date(date: NaiveDate, mensa_name: &str) -> Result<Vec<Self>, std::io::Error> {
         // Check if the mensa data is available locally
         // -> if so, load it
         // -> else load for single date directly
@@ -31,24 +32,52 @@ pub trait Meal: Sized {
 
     /// Local loading ///
     
-    fn load_from_local(date: chrono::NaiveDate, mensa_name: &str, cache_dir: PathBuf) -> Result<Vec<Self>, Box<dyn Error>> where Self: Sized;
+    fn load_from_local(date: chrono::NaiveDate, mensa_name: &str, cache_dir: PathBuf) -> Result<Vec<Self>, std::io::Error> where Self: Sized;
 
     //// Fetching remote data ////
     
     /// Fetches data for a single date
-    fn fetch_data_for_date(date: chrono::NaiveDate, mensa_name: &str) -> Result<Vec<Self>, Box<dyn Error>> where Self: Sized;
+    fn fetch_data_for_date(date: chrono::NaiveDate, mensa_name: &str) -> Result<Vec<Self>, std::io::Error> where Self: Sized;
+
+    fn update_mensa_data() -> JoinHandle<Result<(), std::io::Error>> {
+        thread::spawn(|| {
+            let cache_dir = Self::get_cache_dir()?;
+            let mensadata_path = Self::get_mensadata_dir(&cache_dir)?;
+            
+            // Check if timestamp file exists & is older than 1 day
+            let timestamp_path = mensadata_path.join("timestamp");
+
+            if !timestamp_path.exists() {
+                // If timestamp file does not exist, fetch new data
+                Self::fetch_mensa_data(&cache_dir)?;
+            }
+
+            let mut file:PathBuf = timestamp_path;
+            let contents = fs::read_to_string(&mut file)?;
+            let last_change = chrono::DateTime::from_timestamp(contents.parse().unwrap(), 0).unwrap();
+            let last_change_date = last_change.date_naive();
+
+            if chrono::Local::now().date_naive().signed_duration_since(last_change_date) <= chrono::Duration::days(1) {
+                return Ok(()); // Data is up-to-date
+            }
+            
+            Self::fetch_mensa_data(&cache_dir)?;
+
+            Ok(())
+        })
+    }
 
     /// Fetches Mensadata and stores it in the cache dir
-    fn fetch_mensa_data(cache_dir: &PathBuf) -> Result<(), Box<dyn Error>>;
+    fn fetch_mensa_data(cache_dir: &PathBuf) -> Result<(), std::io::Error>;
 
     /// UTIL ///
     
-    fn get_cache_dir() -> Result<std::path::PathBuf, Box<dyn Error>> {
-        let cache_dir = cache_dir().ok_or("Could not find cache directory")?;
+    fn get_cache_dir() -> Result<std::path::PathBuf, std::io::Error> {
+        let cache_dir = cache_dir().ok_or(std::io::Error::new(std::io::ErrorKind::NotFound, "Could not find cache directory"))?;
         Ok(cache_dir.join(env!("CARGO_PKG_NAME")))
     }
 
-    fn get_mensadata_dir(cache_dir: &PathBuf) -> Result<std::path::PathBuf, Box<dyn Error>> {
+    fn get_mensadata_dir(cache_dir: &PathBuf) -> Result<std::path::PathBuf, std::io::Error> {
         let mensadata_path = cache_dir.join("mensadata");
 
         if !mensadata_path.exists() {
