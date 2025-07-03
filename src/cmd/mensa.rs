@@ -1,5 +1,3 @@
-use std::{sync::mpsc::{channel, Receiver, Sender}, thread};
-
 use crate::cmd::mensa_settings;
 use crate::mensa::meal::Meal;
 use crate::mensa::haw_meal::HawMeal;
@@ -160,49 +158,32 @@ impl Cmd {
                 .clone();
         }
 
-        // Load food in parallel
-        let (sender, receiver): (Sender<Vec<HawMeal>>, Receiver<Vec<HawMeal>>) = channel::<Vec<HawMeal>>();
-        thread::spawn({
-            let mensa_name = mensa_name.clone();
-            let config = config.clone();
-            move || {
-                // Find the food for the specified date
-                let food_for_date:Vec<HawMeal> = match Meal::get_food_for_date(date_to_use, mensa_name.as_str()) {
-                    Ok(food) => food,
-                    Err(e) => {
-                        println!(
-                            "Error fetching food for mensa '{}' on date '{}': {}",
-                            mensa_name, date_to_use, e
-                        );
-                        return;
-                    }
-                };
-
-                // Filter food items based on extras
-                let food_for_date = match config.get_extras() {
-                    Some(extras) => Meal::filter_food_by_extras(food_for_date, extras),
-                    None => food_for_date,
-                };
-
-                thread::sleep(std::time::Duration::from_millis(1000));
-
-                sender.send(food_for_date).unwrap();
+        // Find the food for the specified date
+        let food_for_date:Vec<HawMeal> = match Meal::get_food_for_date(date_to_use, mensa_name.as_str()) {
+            Ok(food) => food,
+            Err(e) => {
+                println!(
+                    "Error fetching food for mensa '{}' on date '{}': {}",
+                    mensa_name, date_to_use, e
+                );
+                return;
             }
-        });
+        };
+
+        // Filter food items based on extras
+        let food_for_date = match config.get_extras() {
+            Some(extras) => Meal::filter_food_by_extras(food_for_date, extras),
+            None => food_for_date,
+        };
 
         // If json option is set, print the food in JSON format
         if self.json {
-            let food_for_date = receiver.recv().unwrap();
-
             println!("{}", serde_json::to_string(&food_for_date).unwrap());
             return;
         }
 
         // output formatted date and food items
         println!("{}\n{}", &mensa_name, date_to_use.format("%Y-%m-%d"));
-
-        // receive the filtered food items
-        let food_for_date = receiver.recv().unwrap();
 
         // Print each food item
         for food in food_for_date {
