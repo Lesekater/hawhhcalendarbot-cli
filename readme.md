@@ -19,6 +19,7 @@ This project is part of the Rust WP SoSe2025 course. The goal is to create a com
 - Filter and show calendar entries by own config
 - Add Webscaper for Mechatronic Entries
 - Add Multithreading
+  - Add Channels
 
 ### Soft Goals
 1. Add functionality to parse calendar data for Mechatronik students. This may involve extending the downloader ([GitHub Repository](https://github.com/HAWHHCalendarBot/downloader)) to handle PDF parsing for schedules not available as ICS files.

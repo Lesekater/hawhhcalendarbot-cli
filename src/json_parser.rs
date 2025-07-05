@@ -1,4 +1,4 @@
-use std::{fmt::{format, Error}, fs::{self, File}, vec};
+use std::{clone, fmt::{format, Error}, fs::{self, File}, vec};
 
 #[derive(Debug)]
 pub(crate) enum Occupations {
@@ -10,7 +10,7 @@ pub(crate) enum Occupations {
 #[derive(Debug)]
 pub(crate) enum Extras {
     Vegan,
-    Vegetarisch,
+    Vegetarian,
     LactoseFree,
     Alcohol,
     BeefFree,
@@ -19,7 +19,35 @@ pub(crate) enum Extras {
     LambFree,
     PigFree,
     PoultryFree,
-    Other(String),
+    Unknown,
+}
+
+impl clone::Clone for Occupations {
+    fn clone(&self) -> Self {
+        match self {
+            Occupations::Student => Occupations::Student,
+            Occupations::Employee => Occupations::Employee,
+            Occupations::Guest => Occupations::Guest,
+        }
+    }
+}
+
+impl clone::Clone for Extras {
+    fn clone(&self) -> Self {
+        match self {
+            Extras::Vegan => Extras::Vegan,
+            Extras::Vegetarian => Extras::Vegetarian,
+            Extras::LactoseFree => Extras::LactoseFree,
+            Extras::Alcohol => Extras::Alcohol,
+            Extras::BeefFree => Extras::BeefFree,
+            Extras::Fish => Extras::Fish,
+            Extras::GelatineFree => Extras::GelatineFree,
+            Extras::LambFree => Extras::LambFree,
+            Extras::PigFree => Extras::PigFree,
+            Extras::PoultryFree => Extras::PoultryFree,
+            Extras::Unknown => Extras::Unknown,
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -29,6 +57,8 @@ pub(crate) enum ConfigName {
     occupation,
     extras,
     events,
+    vusername,
+    vpassword,
 }
 
 
@@ -39,6 +69,22 @@ pub struct Config {
     occupation: Option<Occupations>,
     extras: Option<Vec<Extras>>,
     events: Option<Vec<String>>,
+    vusername: Option<String>,
+    vpassword: Option<String>,
+}
+
+impl clone::Clone for Config {
+    fn clone(&self) -> Self {
+        Config {
+            primary_mensa: self.primary_mensa.clone(),
+            mensa_list: self.mensa_list.clone(),
+            occupation: self.occupation.clone(),
+            extras: self.extras.clone(),
+            events: self.events.clone(),
+            vusername: self.vusername.clone(),
+            vpassword: self.vpassword.clone(),
+        }
+    }
 }
 
 /*
@@ -55,6 +101,9 @@ impl Config {
             occupation: None,
             extras: Some(Vec::new()),
             events: Some(Vec::new()),
+            //Login V-Kennung:
+            vusername: Some(String::new()),
+            vpassword: Some(String::new()),
         }
 
     }
@@ -110,12 +159,26 @@ impl Config {
         self.extras.as_ref()
     }
 
+    pub fn update_username(&mut self, username: String) {
+        self.vusername = Some(username);
+    }
+
+    pub fn get_username(&self) -> Option<String>{
+        self.vusername.clone()
+    }
+
+    pub fn update_password(&mut self, password: String) {
+        self.vpassword = Some(password);
+    }
+
+    pub fn get_password(&self) -> Option<String>{
+        self.vpassword.clone()
+    }
+
     pub fn load_config() -> Config {
-        println!("Config geladen!");
         let path = dirs::config_local_dir()
                 .unwrap()
                 .join("hawhhcalendarbot/cfg.json");
-        println!("Pfad: {:?}", path);
         match fs::read_to_string(path,
         ) {
             Ok(json_config) => Config::struct_from_json_file(&json_config).expect("Fehler beim Parsen der JSON"),
@@ -137,7 +200,6 @@ impl Config {
         json_string,
         )
         .expect("Fehler beim Schreiben der Datei");
-        println!("Config gespeichert!")
     }
 
 //Hilfs funktionen:
@@ -151,7 +213,7 @@ impl Config {
 
 //Json Parser
     fn struct_from_json_file(/*path: &str*/ json_config: &String) -> Result<Config, Box<dyn std::error::Error>> {
-
+        let search_offset: usize = 4;
         //let mut config = Config::new();
 
         //let config_content_raw = fs::read_to_string(path)?;
@@ -161,65 +223,135 @@ impl Config {
         //Whitespace, Leerzeichen und Zeilenumbrüche entfernen
         let config_content_cleaned =  config_content_raw
                                             .chars()
-                                            .filter(|c| !c.is_whitespace()) 
+                                            //.filter(|c| !c.is_whitespace()) 
                                             .collect::<String>();
         
+
         //End index, der gesucht berechnen:
         let pm_end = config_content_cleaned.find(ConfigName::primary_mensa.as_str()).unwrap() + ConfigName::primary_mensa.as_str().len();
         let ml_end = config_content_cleaned.find(ConfigName::mensa_list.as_str()).unwrap() + ConfigName::mensa_list.as_str().len();
         let op_end = config_content_cleaned.find(ConfigName::occupation.as_str()).unwrap() + ConfigName::occupation.as_str().len();
         let et_end = config_content_cleaned.find(ConfigName::extras.as_str()).unwrap() + ConfigName::extras.as_str().len();
         let ev_end = config_content_cleaned.find(ConfigName::events.as_str()).unwrap() + ConfigName::events.as_str().len();
+        let un_end = config_content_cleaned.find(ConfigName::vusername.as_str()).unwrap() + ConfigName::vusername.as_str().len();
+        let up_end = config_content_cleaned.find(ConfigName::vpassword.as_str()).unwrap() + ConfigName::vpassword.as_str().len();
 
         //Inhalt der primary mensa extrahieren:
 
-        let primary_mensa= config_content_cleaned[pm_end+3..pm_end+3 + config_content_cleaned[pm_end+3..].find('"').unwrap()].to_string();
+        let slice = &config_content_cleaned[pm_end + search_offset..];
+        let pm = slice.find('"').map(|end| {
+            slice[..end].to_string()
+        });
 
+        let primary_mensa = match pm {
+            Some(pm_str) => format!("{}", pm_str),
+            None => "null".to_string(), // oder "" wenn du leeren String willst
+        };
+        
         //Inhalt der mensa list extrahieren:
 
-        let mensa_list_all =  &config_content_cleaned[ml_end+3..ml_end+3 + config_content_cleaned[ml_end+3..].find(']').unwrap()];
+        let slice = &config_content_cleaned[ml_end + search_offset..];
+        let mensa_list_all = slice.find(']').map(|end| {&slice[..end]});
 
-        let  mensa_list: Vec<String> = mensa_list_all
+        let mensa_list_all = match mensa_list_all {
+            Some(list) => list,
+            None => "", // oder ein anderer Default-Wert
+        };
+
+
+
+        let mut mensa_list: Vec<String> = mensa_list_all
                                             .chars()
                                             .filter(|&c| c != '"')
                                             .collect::<String>()
                                             .split(',')
                                             .map(|s| s.to_string())
                                             .collect();
+
+        if mensa_list.first().map_or(false, |s| s.is_empty()) {
+            mensa_list.remove(0);
+        };
 
         //Inhalt der Occupation extrahieren:
 
-        let occupations_string= &config_content_cleaned[op_end+3..op_end+3 + config_content_cleaned[op_end+3..].find('"').unwrap()].to_string();
-        let occupations = Occupations::from_str(occupations_string);
+        let slice = &config_content_cleaned[op_end + search_offset..];
+        let occupations_string = slice.find('"').map(|end| {slice[..end].to_string()});
+        let occupations = match occupations_string {
+            Some(s) => Occupations::from_str(&s),
+            None => Some(Occupations::Employee), // oder wie du standardmäßig damit umgehen möchtest
+        };
+
 
         //Inhalt der Extras extrahieren:
-        let extra_list_all =  &config_content_cleaned[et_end+3..et_end+3 + config_content_cleaned[et_end+3..].find(']').unwrap()];
+        let extra_list_all =  &config_content_cleaned[et_end+search_offset..et_end+search_offset + config_content_cleaned[et_end+search_offset..].find(']').unwrap()];
 
-        let extra_list: Vec<Extras> = extra_list_all
+        let mut extra_list_string: Vec<String> = extra_list_all
                                             .chars()
                                             .filter(|&c| c != '"')
                                             .collect::<String>()
                                             .split(',')
-                                            .map(|s| s.to_string())
-                                            .map(|e| Extras::from_str(&e))
+                                            .map(|s| s.trim().to_string())
+                                            //.map(|e| Extras::from_str(&e))
                                             .collect();
+        
+        if extra_list_string.first().map_or(false, |s| s.is_empty()) {
+            extra_list_string.remove(0);
+        };
 
+        let extra_list:Vec<Extras> = extra_list_string.into_iter().map(|e| Extras::from_str(&e)).collect();
+
+        
+        
         //Inhalte der Events extrahieren:
-        let event_list_all =  &config_content_cleaned[ev_end+3..ev_end+3 + config_content_cleaned[ev_end+3..].find(']').unwrap()];
-        let event_list: Vec<String> = event_list_all
-                                            .chars()
-                                            .filter(|&c| c != '"')
-                                            .collect::<String>()
-                                            .split(',')
-                                            .map(|s| s.to_string())
-                                            .collect();
+        let slice = &config_content_cleaned[ev_end + search_offset..];
+        let event_list_all = slice.find(']').map(|end| {&slice[..end]});
+
+        let mut event_list: Vec<String> = match event_list_all {
+            Some(raw) => raw
+                .chars()
+                .filter(|&c| c != '"')
+                .collect::<String>()
+                .split(',')
+                .map(|s| s.trim().to_string()) // trim() für Sicherheit
+                .collect(),
+            None => Vec::new(), // Fallback: leere Liste
+        };
+
+        if event_list.first().map_or(false, |s| s.is_empty()) {
+            event_list.remove(0);
+        };
+
+        //Inhalt des Usernames extrahieren:
+
+        let slice = &config_content_cleaned[un_end + search_offset..];
+        let un = slice.find('"').map(|end| {
+            slice[..end].to_string()
+        });
+
+        let username = match un {
+            Some(un_str) => format!("{}", un_str),
+            None => "null".to_string(), // oder "" wenn du leeren String willst
+        };
+
+        let slice = &config_content_cleaned[up_end + search_offset..];
+        let up = slice.find('"').map(|end| {
+            slice[..end].to_string()
+        });
+
+        let password = match up {
+            Some(up_str) => format!("{}", up_str),
+            None => "null".to_string(), // oder "" wenn du leeren String willst
+        };
+
 
         //Config zurückkgeben:
         Ok(Config { primary_mensa: Some(primary_mensa),
                     mensa_list: Some(mensa_list),
                     occupation: (occupations),
                     extras: Some(extra_list),
-                    events: Some(event_list)
+                    events: Some(event_list),
+                    vusername: Some(username),
+                    vpassword: Some(password)
                 })
 
     }
@@ -231,12 +363,13 @@ impl Config {
             None => "null".to_string(), // oder "" falls du leere Strings willst
         };
 
-        let mut mensa_list:String = config.mensa_list
+        let mut mensa_list = config.mensa_list
                                                         .iter()
                                                         .map(|s|  format!("{:?}", s))
                                                         .collect::<Vec<String>>()            // in Vec sammeln
                                                         .join(", ");                                      
     
+
         let occupations = match &config.occupation {
             Some(occ) => format!("\"{:?}\"", occ),
             None => "null".to_string(), // oder "" falls du leere Strings willst
@@ -261,7 +394,17 @@ impl Config {
                                                         .collect::<Vec<String>>()            // in Vec sammeln
                                                         .join(", "); 
 
-        let json_string = format!("{{ \n   \"{}\": {},\n   \"{}\": {},\n   \"{}\": {},\n   \"{}\": {},\n   \"{}\": {}\n}}", ConfigName::primary_mensa.as_str(), primary_mensa, ConfigName::mensa_list.as_str(), mensa_list, ConfigName::occupation.as_str(), occupations, ConfigName::extras.as_str(), extra_list, ConfigName::events.as_str(), event_list);
+        let username = match &config.vusername {
+            Some(un) => format!("\"{}\"", un),
+            None => "null".to_string(), // oder "" falls du leere Strings willst
+        };
+
+        let password = match &config.vpassword {
+            Some(up) => format!("\"{}\"", up),
+            None => "null".to_string(), // oder "" falls du leere Strings willst
+        };
+
+        let json_string = format!("{{ \n   \"{}\": {},\n   \"{}\": {},\n   \"{}\": {},\n   \"{}\": {},\n   \"{}\": {},\n   \"{}\": {},\n   \"{}\": {}\n}}", ConfigName::primary_mensa.as_str(), primary_mensa, ConfigName::mensa_list.as_str(), mensa_list, ConfigName::occupation.as_str(), occupations, ConfigName::extras.as_str(), extra_list, ConfigName::events.as_str(), event_list, ConfigName::vusername.as_str(), username, ConfigName::vpassword.as_str(), password);
 
         //fs::write(path, json_string)?;
 
@@ -287,7 +430,7 @@ impl Extras {
     pub fn as_str(&self) -> &str {
         match self {
             Extras::Vegan => "Vegan",
-            Extras::Vegetarisch => "Vegetarisch",
+            Extras::Vegetarian => "Vegetarian",
             Extras::LactoseFree => "LactoseFree",
             Extras::Alcohol => "Alcohol",
             Extras::BeefFree => "Beeffree",
@@ -296,14 +439,14 @@ impl Extras {
             Extras::LambFree => "Lambfree",
             Extras::PigFree => "Pigfree",
             Extras::PoultryFree => "Poultryfree",
-            Extras::Other(_) => "Other",
+            Extras::Unknown => "Unknown"
         }
     }
 
    pub fn from_str(s: &str) -> Extras {
         match Self::capitalize_first(s) {
             ref s if s == "Vegan" => Extras::Vegan,
-            ref s if s == "Vegetarisch" => Extras::Vegetarisch,
+            ref s if s == "Vegetarian" => Extras::Vegetarian,
             ref s if s == "Lactosefree" => Extras::LactoseFree,
             ref s if s == "Alcohol" => Extras::Alcohol,
             ref s if s == "Beeffree" => Extras::BeefFree,
@@ -312,7 +455,7 @@ impl Extras {
             ref s if s == "Lambfree" => Extras::LambFree,
             ref s if s == "Pigfree" => Extras::PigFree,
             ref s if s == "Poultryfree" => Extras::PoultryFree,
-            other => Extras::Other(other),
+            _ => Extras::Unknown,
         }
 }
 
@@ -328,6 +471,8 @@ impl ConfigName {
             ConfigName::occupation => "occupation",
             ConfigName::extras => "extras",
             ConfigName::events => "events",
+            ConfigName::vusername => "vusername",
+            ConfigName::vpassword => "vpassword",
         }
     }
 }

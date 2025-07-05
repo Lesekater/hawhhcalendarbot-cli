@@ -1,7 +1,6 @@
 use crate::cmd::mensa_settings;
 use crate::mensa::meal::Meal;
 use crate::mensa::haw_meal::HawMeal;
-//use crate::config_managment::load_config;
 use crate::json_parser::Config;
 use clap::{Parser, Subcommand};
 
@@ -53,7 +52,7 @@ enum MensaCommands {
 
 impl Cmd {
     pub fn run(self) -> Result<(), Box<dyn std::error::Error>> {
-        // TODO: Load cache in parallel
+        let handle = HawMeal::update_mensa_data();
 
         let currentdate = chrono::Local::now().date_naive();
 
@@ -79,6 +78,11 @@ impl Cmd {
             None => {
                 self.date_command(&Some(MensaCommands::Today { number: self.number }), currentdate);
             }
+        }
+
+        if !handle.is_finished() {
+            println!("\nWaiting for mensa data update to finish...");
+            let _ = handle.join();
         }
 
         Ok(())
@@ -166,6 +170,12 @@ impl Cmd {
             }
         };
 
+        // Filter food items based on extras
+        let food_for_date = match config.get_extras() {
+            Some(extras) => Meal::filter_food_by_extras(food_for_date, extras),
+            None => food_for_date,
+        };
+
         // If json option is set, print the food in JSON format
         if self.json {
             println!("{}", serde_json::to_string(&food_for_date).unwrap());
@@ -173,13 +183,7 @@ impl Cmd {
         }
 
         // output formatted date and food items
-        println!("{}\n{}", mensa_name, date_to_use.format("%Y-%m-%d"));
-
-        // Filter food items based on extras
-        let food_for_date = match config.get_extras() {
-            Some(extras) => Meal::filter_food_by_extras(food_for_date, extras),
-            None => food_for_date,
-        };
+        println!("{}\n{}", &mensa_name, date_to_use.format("%Y-%m-%d"));
 
         // Print each food item
         for food in food_for_date {
