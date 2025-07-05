@@ -1,6 +1,8 @@
 use std::{
     collections::BTreeMap,
+    env::VarError,
     error::Error,
+    ffi::NulError,
     fmt,
     fs::{self, File},
     io::{Read, Write},
@@ -8,22 +10,19 @@ use std::{
     process::Command,
 };
 
-use chrono::NaiveDate;
+use chrono::{Datelike, NaiveDate, NaiveDateTime};
 use regex::Regex;
 use reqwest::blocking as reqwest;
 use serde::{Deserialize, Serialize};
 
-use crate::{
-    json_parser::Occupations,
-    //mensa::meal::{Contents, Meal, Prices},
-};
+use crate::{events::event::*, json_parser::Occupations};
 
 const DATA_URL: &str =
     "https://raw.githubusercontent.com/HAWHHCalendarBot/eventfiles/refs/heads/main/"; // /faculty/event.json
 
-#[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Clone)]
 #[serde(rename_all = "camelCase")]
-pub struct EventEntry {
+pub struct HawEventEntry {
     pub name: String,
     pub location: String,
     pub description: String,
@@ -31,45 +30,9 @@ pub struct EventEntry {
     pub end: NaiveDateTime,
 }
 
-#[derive(Serialize, Debug, PartialEq, Eq)]
-#[serde(rename_all = "PascalCase")]
-pub struct EventEntryV4 {
-    pub name: String,
-    pub location: String,
-    pub description: String,
-    #[serde(serialize_with = "serialize_date_time")]
-    pub start_time: NaiveDateTime,
-    #[serde(serialize_with = "serialize_date_time")]
-    pub end_time: NaiveDateTime,
-}
-
-fn serialize_date_time<S>(dt: &NaiveDateTime, serializer: S) -> Result<S::Ok, S::Error>
-where
-    S: serde::Serializer,
-{
-    serializer.serialize_str(&Berlin.from_local_datetime(dt).unwrap().to_rfc3339())
-}
-
-impl From<EventEntry> for EventEntryV4 {
-    fn from(value: EventEntry) -> Self {
-        Self {
-            name: value.name,
-            location: value.location,
-            description: value.description,
-            start_time: value.start,
-            end_time: value.end,
-        }
-    }
-}
-
-impl Event for EventEntry {
-    fn get_contents(&self) -> &Contents {
-        &self.contents
-    }
-
+impl Event for HawEventEntry {
     fn load_from_local(
-        department: &str,
-        module: &str,
+        event: &Event_Meta,
         cache_dir: PathBuf,
     ) -> Result<Vec<Self>, Box<dyn Error>> {
         // Read timestamp of local event data
@@ -96,18 +59,14 @@ impl Event for EventEntry {
         // Load new data
         let eventdata_path = Self::get_eventdata_dir(&cache_dir)?;
 
-        if !eventdata_path.exists() {
-            return Err(format!("Local event data not available at {:?}", eventdata_path).into());
-        }
+        let path_str = format!("{}/{}.json", &event.department, &event.module);
 
-        let path_str = format!("./{}/{}.json", &department, &module,);
-
-        let path = Path::join(&eventdata_path, Path::new(&path_str));
+        let path = eventdata_path.join(Path::new(&path_str));
 
         if !path.exists() {
             return Err(format!(
                 "No data found for module '{}' in department '{}'",
-                &modue, &department
+                &event.module, &event.department
             )
             .into());
         }
@@ -118,8 +77,25 @@ impl Event for EventEntry {
         Ok(serde_json::from_str(&file_content)?)
     }
 
-    fn fetch_event_for_module(department: &str, module: &str) -> Result<Vec<Self>, Box<dyn Error>> {
-        let url = format!("{DATA_URL}/{}/{}.json", &department, &module);
+    fn get_events_for_date(
+        event_descriptor: Vec<Event_Meta>,
+        date: NaiveDate,
+    ) -> Result<Vec<Self>, Box<dyn Error>> {
+        let mut events: Vec<Self> = vec![];
+        for module in event_descriptor.iter() {
+            let module_events = Self::get_events_for_module(module)?;
+
+            for event in module_events.iter() {
+                if date.day() == event.start.day() {
+                    events.push(event.clone());
+                }
+            }
+        }
+        Ok(events)
+    }
+
+    fn fetch_events_for_module(event: &Event_Meta) -> Result<Vec<Self>, Box<dyn Error>> {
+        let url = format!("{DATA_URL}/{}/{}.json", &event.department, &event.module);
 
         let result = reqwest::get(url)?;
 

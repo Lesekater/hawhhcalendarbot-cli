@@ -8,63 +8,58 @@ use std::{fmt, fs};
 
 use crate::json_parser::Extras;
 
+/// Event describing a module within a department.
 #[derive(Debug, Hash, PartialEq, Eq)]
-pub struct Meta {
+pub struct Event_Meta {
+    /// The department name.
     pub department: String,
-    pub modules: String,
+    /// The module name.
+    pub module: String,
 }
 
+/// Trait for event data sources, providing methods for loading, fetching, and caching event data.
 pub trait Event: Sized {
-    //// Fetching data ////
-
-    fn get_event_for_module(department: &str, module: &str) -> Result<Vec<Self>, Box<dyn Error>> {
-        // Check if the mensa data is available locally
-        // -> if so, load it
-        // -> else load for single date directly
+    /// Returns all events for a module in a given Department.
+    /// Attempts to load from local cache, falling back to remote fetch if unavailable.
+    fn get_events_for_module(event: &Event_Meta) -> Result<Vec<Self>, Box<dyn Error>> {
         let cache_dir = Self::get_cache_dir()?;
-        Self::load_from_local(department, module, cache_dir)
-            .or_else(|_| Self::fetch_event_for_module(department, module))
+        Self::load_from_local(event, cache_dir).or_else(|_| Self::fetch_events_for_module(event))
     }
 
-    fn get_event_for_date(event_descriptor: Vec<Meta>, date: NaiveDate) -> Result<Vec<Self>, Box<dyn Error>>;
+    /// Returns all events for the given descriptors on a specific date.
+    fn get_events_for_date(
+        event_descriptor: Vec<Event_Meta>,
+        date: NaiveDate,
+    ) -> Result<Vec<Self>, Box<dyn Error>>;
 
-    /// Local loading ///
-
-    fn load_from_local(
-        department: &str,
-        module: &str,
-        cache_dir: PathBuf,
-    ) -> Result<Vec<Self>, Box<dyn Error>>
+    /// Loads events for a module from the local cache directory.
+    fn load_from_local(event: &Event_Meta, cache_dir: PathBuf) -> Result<Vec<Self>, Box<dyn Error>>
     where
         Self: Sized;
 
-    //// Fetching remote data ////
-
-    /// Fetches data for a single module
-    fn fetch_event_for_module(
-        date: chrono::NaiveDate,
-        mensa_name: &str,
-    ) -> Result<Vec<Self>, Box<dyn Error>>
+    /// Fetches events for a single module from a remote source.
+    fn fetch_events_for_module(event: &Event_Meta) -> Result<Vec<Self>, Box<dyn Error>>
     where
         Self: Sized;
 
-    /// Fetches Mensadata and stores it in the cache dir
+    /// Fetches all event data and stores it in the cache directory.
     fn fetch_event_data(cache_dir: &PathBuf) -> Result<(), Box<dyn Error>>;
 
-    /// UTIL ///
-
+    /// Returns the cache directory path for event data.
     fn get_cache_dir() -> Result<std::path::PathBuf, Box<dyn Error>> {
         let cache_dir = cache_dir().ok_or("Could not find cache directory")?;
         Ok(cache_dir.join(env!("CARGO_PKG_NAME")))
     }
 
-    fn get_mensadata_dir(cache_dir: &PathBuf) -> Result<std::path::PathBuf, Box<dyn Error>> {
+    /// Returns the directory path for event data within the cache.
+    /// Creates the directory if it does not exist.
+    fn get_eventdata_dir(cache_dir: &PathBuf) -> Result<std::path::PathBuf, Box<dyn Error>> {
         let eventdata_path = cache_dir.join("eventdata");
 
         if !eventdata_path.exists() {
             fs::create_dir_all(&eventdata_path).expect("Could not create event data directory");
         }
 
-        Ok(mensadata_path)
+        Ok(eventdata_path)
     }
 }
