@@ -49,7 +49,10 @@ This project is part of the Rust WP SoSe2025 course. The goal is to create a com
 
 ## Example Usage
 ```bash
+# List modules for a specific department (with filtering)
+cargo run events list-modules informatik --filter "ad"
 # Add event to config
 cargo run events add bai3-ad informatik
 # List all events for a specific date
 cargo run events get 2025-07-04
+```
