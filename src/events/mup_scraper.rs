@@ -31,10 +31,10 @@ impl MupLecture {
             .collect()
     }
 
-    pub fn scrape_lecture_plan(user: String, password: String, url: String, semester_index: usize) -> Result<Vec<MupLecture>, Box<dyn Error>> {
+    pub fn scrape_lecture_plan(user: String, password: String, url: String, semester_groupe: String) -> Result<Vec<MupLecture>, Box<dyn Error>> {
         let body = Self::fetch_html(user, password, &url)?;
         let lecture_table = Self::extract_lecture_table(&body)?;
-        let lecture_structs = Self::parse_lecture_table(lecture_table, semester_index);
+        let lecture_structs = Self::parse_lecture_table(lecture_table, semester_groupe);
 
         Ok(lecture_structs)
     }
@@ -109,7 +109,7 @@ impl MupLecture {
         Ok(rows_parsed)
     }
 
-    fn parse_lecture_table(lecture_table: Vec<Vec<(String, usize, Option<String>)>>, semester_group_index: usize) -> Vec<MupLecture> {
+    fn parse_lecture_table(lecture_table: Vec<Vec<(String, usize, Option<String>)>>, semester_group: String) -> Vec<MupLecture> {
         let mut lectures = Vec::new();
 
         for (i, rows) in lecture_table.iter().enumerate() {
@@ -133,7 +133,7 @@ impl MupLecture {
                             }
 
                             lectures.push(MupLecture {
-                                name: format!("BMT{}-{}", semester_group_index + 1, name),
+                                name: format!("{}-{}", semester_group, name),
                                 location,
                                 description: disc,
                                 start: start_time,
@@ -191,6 +191,7 @@ impl MupLecture {
             let prof = le_prof.find(prof_scope)?.as_str().to_string();
 
             let patterns = [
+    // Bestehende Patterns (deine Liste)
                 r"\b[A-Z]{3} [LU]\b",
                 r"\b[A-Z]{3}\.?\b",
                 r"\b[A-Z]{3}\b",
@@ -204,7 +205,13 @@ impl MupLecture {
                 r"\b[A-Z][a-z]{3}\b",
                 r"\b_[A-Z]{3,}_(?: [A-Z])?\b",
                 r"\b[A-Z]{2}[a-z]{2}\b",
+                r"\b[A-Z]{3,5}\b",
+                r"\b[A-Z]{2}-[a-z]{3,6}\b",
+                r"\b[A-Z]{2,5}-\d[a-z]{2,4}\b",
+                r"\b[A-Z]{4,}\.?\b",
+                r"\b[A-Z]-[A-Z]{2,}\b",
             ];
+
 
             let vec_name_regex: Vec<Regex> = patterns
                 .iter()
@@ -286,7 +293,7 @@ impl MupLecture {
     ########################################*/
 
     fn save_struct_to_json(structs: &Vec<Vec<MupLecture>>) -> std::io::Result<()> {
-        let base_path = dirs::cache_dir().unwrap().join("hawhhcalendarbot-cli/eventdata/mechatronik/");
+        let base_path = dirs::cache_dir().unwrap().join("hawhhcalendarbot-cli/eventdata/maschienenbau-und-produktion/");
         fs::create_dir_all(&base_path)?;
         
 
@@ -306,7 +313,7 @@ impl MupLecture {
     }
 
     pub fn load_struct_from_json() -> std::io::Result<Vec<Vec<MupLecture>>> {
-        let path = dirs::cache_dir().unwrap().join("hawhhcalendarbot-cli/mechatronik/eventdata/");
+        let path = dirs::cache_dir().unwrap().join("hawhhcalendarbot-cli/eventdata/mechatronik/");
         let file = File::open(path)?;
         let reader = BufReader::new(file);
         let data = serde_json::from_reader(reader)?;
@@ -315,22 +322,55 @@ impl MupLecture {
 
     pub fn fetch_all_plans(user: String, password: String) -> Result<Vec<Vec<MupLecture>>, Box<dyn Error>> {
         let base_url = "https://www.mp.haw-hamburg.de/auth/vorlesungsplan/";
-        let urls = Self::generate_urls(base_url, "B_MT", ".php", 7);
+        let mut urls = Self::generate_urls(base_url, "B_MT", ".php", 7);
 
         let mut lectures: Vec<Vec<MupLecture>> = Vec::new();
 
+        let all_urls: Vec<String> = vec![
+    String::from("https://www.mp.haw-hamburg.de/auth/vorlesungsplan/1a.php"),
+    String::from("https://www.mp.haw-hamburg.de/auth/vorlesungsplan/1en.php"),
+    String::from("https://www.mp.haw-hamburg.de/auth/vorlesungsplan/2a.php"),
+    String::from("https://www.mp.haw-hamburg.de/auth/vorlesungsplan/2b.php"),
+    String::from("https://www.mp.haw-hamburg.de/auth/vorlesungsplan/2c.php"),
+    String::from("https://www.mp.haw-hamburg.de/auth/vorlesungsplan/3a.php"),
+    String::from("https://www.mp.haw-hamburg.de/auth/vorlesungsplan/4DM.php"),
+    String::from("https://www.mp.haw-hamburg.de/auth/vorlesungsplan/4ET.php"),
+    String::from("https://www.mp.haw-hamburg.de/auth/vorlesungsplan/4EK.php"),
+    String::from("https://www.mp.haw-hamburg.de/auth/vorlesungsplan/4P.php"),
+    String::from("https://www.mp.haw-hamburg.de/auth/vorlesungsplan/5_6DM.php"),
+    String::from("https://www.mp.haw-hamburg.de/auth/vorlesungsplan/5_6ET.php"),
+    String::from("https://www.mp.haw-hamburg.de/auth/vorlesungsplan/5_6EK.php"),
+    String::from("https://www.mp.haw-hamburg.de/auth/vorlesungsplan/5_6P.php"),
+    String::from("https://www.mp.haw-hamburg.de/auth/vorlesungsplan/Master_BS.php"),
+    String::from("https://www.mp.haw-hamburg.de/auth/vorlesungsplan/Master_NE.php"),
+    String::from("https://www.mp.haw-hamburg.de/auth/vorlesungsplan/Master_P.php"),
+    String::from("https://www.mp.haw-hamburg.de/auth/vorlesungsplan/Master_KP.php"),
+        ];
+        urls.extend(all_urls);
+
         for (index, url) in urls.into_iter().enumerate() {
-            lectures.push(Self::scrape_lecture_plan(user.clone(), password.clone(), url.clone(), index)?);
+            let semester_name = Self::extract_last_segment(&url);
+            lectures.push(Self::scrape_lecture_plan(user.clone(), password.clone(), url.clone(), semester_name)?);
         }
 
         Ok(lectures)
     }
 
-    pub fn fetch_one_semester(user: String, password: String, semester_index: usize) -> Result<Vec<MupLecture>, Box<dyn Error>> {
+    fn extract_last_segment(path: &str) -> String {
+    path.rsplit('/')
+        .next()
+        .and_then(|filename| filename.strip_suffix(".php"))
+        .unwrap_or("")
+        .to_string()
+}
+
+
+
+    pub fn fetch_one_semester(user: String, password: String, semester_name: String) -> Result<Vec<MupLecture>, Box<dyn Error>> {
         let base_url = "https://www.mp.haw-hamburg.de/auth/vorlesungsplan/";
         let urls = Self::generate_urls(base_url, "B_MT", ".php", 7);
 
-        let lectures = Self::scrape_lecture_plan(user.clone(), password.clone(), urls[semester_index].clone(), semester_index)?;
+        let lectures = Self::scrape_lecture_plan(user.clone(), password.clone(), urls[0].clone(), semester_name)?;
         Ok(lectures)
     }
 

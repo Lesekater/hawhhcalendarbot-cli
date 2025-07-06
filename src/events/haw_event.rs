@@ -277,11 +277,14 @@ impl Event for HawEventEntry {
                 continue; // Skip files
             }
 
-            /*
-            if let Some(department) = entry.file_name().to_str() && !department.starts_with('.') {
-                departments.push(department.to_string());
+            
+            if let Some(department) = entry.file_name().to_str() {
+                if !department.starts_with('.') {
+                    departments.push(department.to_string());
+                }
             }
-             */
+
+             
         }
 
         if departments.is_empty() {
