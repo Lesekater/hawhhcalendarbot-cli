@@ -29,7 +29,7 @@ enum EventCommands {
         department: Option<String>,
     },
     /// Fetches all event data and stores it in the cache directory.
-    Fetch,
+    Cache,
     /// List departments that have events.
     ListDepartments,
     /// List modules for a specific department
@@ -107,7 +107,7 @@ impl Cmd {
                     }
                 }
             }
-            EventCommands::Fetch => {
+            EventCommands::Cache => {
                 // Fetch all event data and store it in the cache directory
                 HawEventEntry::fetch_event_data(&HawEventEntry::get_cache_dir()?)?;
                 println!("Event data fetched and stored successfully.");
