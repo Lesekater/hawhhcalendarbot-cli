@@ -26,6 +26,7 @@ enum EventCommands {
         /// The date to get events for
         date: String,
         module: Option<String>,
+        department: Option<String>,
     },
     /// Fetches all event data and stores it in the cache directory.
     Fetch,
@@ -55,7 +56,7 @@ enum EventCommands {
 impl Cmd {
     pub fn run(self) -> Result<(), Box<dyn std::error::Error>> {
         match self.command {
-            EventCommands::Get { date, module } => {
+            EventCommands::Get { date, module, department } => {
                 // Parse date string to NaiveDate
                 let date = NaiveDate::parse_from_str(&date, "%Y-%m-%d").map_err(|_| {
                     format!(
@@ -67,11 +68,23 @@ impl Cmd {
                 // Build Event_Meta vector (department is required, adjust as needed)
                 let mut event_meta = Vec::new();
                 if let Some(module) = module {
+                    if module.is_empty() {
+                        return Err("Module cannot be empty".into());
+                    }
+
+                    if let Some(department) = &department {
+                        if department.is_empty() {
+                            return Err("Department cannot be empty".into());
+                        }
+                    } else {
+                        return Err("Department must be provided when specifying a module".into());
+                    }
+
                     let config = Config::load_config();
                     config.get_events();
                     event_meta.push(Event_Meta {
-                        department: String::from("informatik"), // TODO: set department from config or input
-                        module,
+                        department: department.expect("No department provided").to_lowercase(),
+                        module: module.to_lowercase(),
                     });
                 }
 
