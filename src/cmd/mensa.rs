@@ -122,7 +122,13 @@ impl Cmd {
         // Check primary mensa
         if additional_mensa.is_none() {
             mensa_name = match config.get_primary_mensa() {
-                Some(name) => name,
+                Some(name) => {
+                    if name.is_empty() {
+                        println!("Primary Mensa is not set - please set it in the config");
+                        return;
+                    }
+                    name
+                }
                 None => {
                     println!("Primary Mensa is not set - please set it in the config");
                     return;
@@ -165,7 +171,7 @@ impl Cmd {
                 if e.to_string().contains("404") {
                     println!("No food found for mensa '{}' on date '{}'. This could be due to a holiday or weekend.", mensa_name, date_to_use);
                     return;
-                }
+                }   
 
                 println!(
                     "Error fetching food for mensa '{}' on date '{}': {}",
