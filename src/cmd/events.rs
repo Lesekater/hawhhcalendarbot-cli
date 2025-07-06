@@ -56,6 +56,10 @@ impl Cmd {
     pub fn run(self) -> Result<(), Box<dyn std::error::Error>> {
         match self.command {
             EventCommands::Get { date, module } => {
+                // TODO: Use timecode val to reload event data if needed
+                HawEventEntry::fetch_event_data(&HawEventEntry::get_cache_dir()?)?;
+                println!("");
+
                 // Parse date string to NaiveDate
                 let date = NaiveDate::parse_from_str(&date, "%Y-%m-%d").map_err(|_| {
                     format!(

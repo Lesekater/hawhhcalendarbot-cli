@@ -148,7 +148,7 @@ impl Event for HawEventEntry {
             ).into());
         }
 
-        let url = dbg!(format!("{DATA_URL}/{}/{}.json", &event.department, &event.module));
+        let url = format!("{DATA_URL}/{}/{}.json", &event.department, &event.module);
 
         let result = reqwest::get(url)?;
 
