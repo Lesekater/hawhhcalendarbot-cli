@@ -27,12 +27,12 @@
  * 
 */
 
-#![feature(mpmc_channel)]
+//#![feature(mpmc_channel)]
 mod mensa;
 mod cmd;
 //mod config_managment;
-
 mod json_parser;
+mod events;
 
 use crate::cmd::Cli;
 
