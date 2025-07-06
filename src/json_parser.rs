@@ -263,13 +263,44 @@ impl Config {
         
 
         //End index, der gesucht berechnen:
-        let pm_end = config_content_cleaned.find(ConfigName::primary_mensa.as_str()).unwrap() + ConfigName::primary_mensa.as_str().len();
-        let ml_end = config_content_cleaned.find(ConfigName::mensa_list.as_str()).unwrap() + ConfigName::mensa_list.as_str().len();
-        let op_end = config_content_cleaned.find(ConfigName::occupation.as_str()).unwrap() + ConfigName::occupation.as_str().len();
-        let et_end = config_content_cleaned.find(ConfigName::extras.as_str()).unwrap() + ConfigName::extras.as_str().len();
-        let ev_end = config_content_cleaned.find(ConfigName::events.as_str()).unwrap() + ConfigName::events.as_str().len();
-        let un_end = config_content_cleaned.find(ConfigName::vusername.as_str()).unwrap() + ConfigName::vusername.as_str().len();
-        let up_end = config_content_cleaned.find(ConfigName::vpassword.as_str()).unwrap() + ConfigName::vpassword.as_str().len();
+
+        
+
+        let pm_end = match config_content_cleaned.find(ConfigName::primary_mensa.as_str()) {
+            Some(idx) => idx + ConfigName::primary_mensa.as_str().len(),
+            None => return Err("primary_mensa nicht gefunden".into()),
+        };
+
+        let ml_end = match config_content_cleaned.find(ConfigName::mensa_list.as_str()) {
+            Some(idx) => idx + ConfigName::mensa_list.as_str().len(),
+            None => return Err("mensa_list nicht gefunden".into()),
+        };
+
+        let op_end = match config_content_cleaned.find(ConfigName::occupation.as_str()) {
+            Some(idx) => idx + ConfigName::occupation.as_str().len(),
+            None => return Err("occupation nicht gefunden".into()),
+        };
+
+        let et_end = match config_content_cleaned.find(ConfigName::extras.as_str()) {
+            Some(idx) => idx + ConfigName::extras.as_str().len(),
+            None => return Err("extras nicht gefunden".into()),
+        };
+
+        let ev_end = match config_content_cleaned.find(ConfigName::events.as_str()) {
+            Some(idx) => idx + ConfigName::events.as_str().len(),
+            None => return Err("events nicht gefunden".into()),
+        };
+
+        let un_end = match config_content_cleaned.find(ConfigName::vusername.as_str()) {
+            Some(idx) => idx + ConfigName::vusername.as_str().len(),
+            None => return Err("vusername nicht gefunden".into()),
+        };
+
+        let up_end = match config_content_cleaned.find(ConfigName::vpassword.as_str()) {
+            Some(idx) => idx + ConfigName::vpassword.as_str().len(),
+            None => return Err("vpassword nicht gefunden".into()),
+        };
+
 
         //Inhalt der primary mensa extrahieren:
 

@@ -27,7 +27,7 @@
  * 
 */
 
-#![feature(mpmc_channel)]
+//#![feature(mpmc_channel)]
 mod mensa;
 mod events;
 mod cmd;

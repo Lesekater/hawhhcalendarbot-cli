@@ -15,7 +15,10 @@ use regex::Regex;
 use reqwest::blocking as reqwest;
 use serde::{Deserialize, Serialize};
 
-use crate::{events::event::*, json_parser::{Config, Occupations}};
+use super::mup_scraper::MupLecture;
+
+use crate::{events::{event::*, mup_scraper}, json_parser::{Config, Occupations}};
+
 
 const DATA_URL: &str =
     "https://raw.githubusercontent.com/HAWHHCalendarBot/eventfiles/refs/heads/main/"; // /faculty/event.json
@@ -175,7 +178,7 @@ impl Event for HawEventEntry {
             fs::create_dir_all(&eventdata_path)?;
         }
 
-        print!("fetching into: {:?}", &eventdata_path);
+        println!("fetching into: {:?}", &eventdata_path);
 
         // Clone the event data repository
         let output = Command::new("git")
@@ -190,6 +193,27 @@ impl Event for HawEventEntry {
             let error_message = String::from_utf8_lossy(&output.stderr);
             return Err(format!("Failed to clone event data: {}", error_message).into());
         }
+
+        //fetching Event Data that are not in repo (MuP):
+        let conf = Config::load_config();
+        match conf.get_username() {
+            Some(user) => {
+                match conf.get_password() {
+                    Some(password) => {
+                        match  MupLecture::fetch_all_mup_plans_to_cache(user, password){
+                            Ok(_) => {println!("Mup Lectures fetched!")},
+                            Err(e) => {println!("Cant fetch Mup Lectures, cause: {}", e)}
+                        }
+                    },
+                    None => {println!("found no Password, cant fetch MuP Lectures")},
+                    
+                };
+
+            },
+            None => {println!("found no Username, cant fetch MuP Lectures")}  
+        };
+
+        
 
         // If the clone was successful, return Ok
         println!("Event data cloned successfully.");
@@ -253,9 +277,11 @@ impl Event for HawEventEntry {
                 continue; // Skip files
             }
 
+            /*
             if let Some(department) = entry.file_name().to_str() && !department.starts_with('.') {
                 departments.push(department.to_string());
             }
+             */
         }
 
         if departments.is_empty() {
