@@ -162,6 +162,11 @@ impl Cmd {
         let food_for_date:Vec<HawMeal> = match Meal::get_food_for_date(date_to_use, mensa_name.as_str()) {
             Ok(food) => food,
             Err(e) => {
+                if e.to_string().contains("404") {
+                    println!("No food found for mensa '{}' on date '{}'. This could be due to a holiday or weekend.", mensa_name, date_to_use);
+                    return;
+                }
+
                 println!(
                     "Error fetching food for mensa '{}' on date '{}': {}",
                     mensa_name, date_to_use, e
