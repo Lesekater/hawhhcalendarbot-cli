@@ -91,11 +91,27 @@ impl Event for HawEventEntry {
                 }
             }
         }
+
+        if events.is_empty() {
+            return Err(format!(
+                "No events found for date {} in modules: {:?}",
+                date, event_descriptor
+            )
+            .into());
+        }
+
         Ok(events)
     }
 
     fn fetch_events_for_module(event: &Event_Meta) -> Result<Vec<Self>, Box<dyn Error>> {
-        let url = format!("{DATA_URL}/{}/{}.json", &event.department, &event.module);
+        if event.department.is_empty() || event.module.is_empty() {
+            return Err(format!(
+                "Department and module must be specified. Got: department='{}', module='{}'",
+                event.department, event.module
+            ).into());
+        }
+
+        let url = dbg!(format!("{DATA_URL}/{}/{}.json", &event.department, &event.module));
 
         let result = reqwest::get(url)?;
 
@@ -147,5 +163,68 @@ impl Event for HawEventEntry {
             .expect("couldnt write timestamp");
 
         Ok(())
+    }
+    
+    fn get_modules_for_department(department: &str, filter: Option<&str>) -> Result<Vec<String>, Box<dyn Error>> {
+        let cache_dir = Self::get_cache_dir()?;
+        let eventdata_path = Self::get_eventdata_dir(&cache_dir)?;
+
+        if !eventdata_path.exists() {
+            return Err("Event data directory does not exist".into());
+        }
+
+        let department_path = eventdata_path.join(department);
+        if !department_path.exists() {
+            return Err(format!("Department '{}' does not exist", department).into());
+        }
+
+        let mut modules = vec![];
+        for entry in fs::read_dir(department_path)? {
+            let entry = entry?;
+            if entry.file_type()?.is_file() {
+                if let Some(module) = entry.file_name().to_str() {
+                    if module.ends_with(".json") && !module.starts_with('.') {
+                        modules.push(module.trim_end_matches(".json").to_string());
+                    }
+                }
+            }
+        }
+
+        if let Some(filter) = filter {
+            modules.retain(|module| module.contains(filter));
+        }
+
+        if modules.is_empty() {
+            return Err(format!("No modules found for department '{}'", department).into());
+        }
+
+        Ok(modules)
+    }
+    
+    fn get_departments() -> Result<Vec<String>, Box<dyn Error>> {
+        let cache_dir = Self::get_cache_dir()?;
+        let eventdata_path = Self::get_eventdata_dir(&cache_dir)?;
+
+        if !eventdata_path.exists() {
+            return Err("Event data directory does not exist".into());
+        }
+
+        let mut departments = vec![];
+        for entry in fs::read_dir(eventdata_path)? {
+            let entry = entry?;
+            if entry.file_type()?.is_file() {
+                continue; // Skip files
+            }
+
+            if let Some(department) = entry.file_name().to_str() && !department.starts_with('.') {
+                departments.push(department.to_string());
+            }
+        }
+
+        if departments.is_empty() {
+            return Err("No departments found".into());
+        }
+
+        Ok(departments)
     }
 }

@@ -32,6 +32,12 @@ pub trait Event: Sized {
         date: NaiveDate,
     ) -> Result<Vec<Self>, Box<dyn Error>>;
 
+    /// List all possible modules for a given department.
+    fn get_modules_for_department(department: &str, filter: Option<&str>) -> Result<Vec<String>, Box<dyn Error>>;
+
+    /// List all departments that have events.
+    fn get_departments() -> Result<Vec<String>, Box<dyn Error>>;
+
     /// Loads events for a module from the local cache directory.
     fn load_from_local(event: &Event_Meta, cache_dir: PathBuf) -> Result<Vec<Self>, Box<dyn Error>>
     where
