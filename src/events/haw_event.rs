@@ -15,7 +15,7 @@ use regex::Regex;
 use reqwest::blocking as reqwest;
 use serde::{Deserialize, Serialize};
 
-use crate::{events::event::*, json_parser::Occupations};
+use crate::{events::event::*, json_parser::{Config, Occupations}};
 
 const DATA_URL: &str =
     "https://raw.githubusercontent.com/HAWHHCalendarBot/eventfiles/refs/heads/main/"; // /faculty/event.json
@@ -77,6 +77,43 @@ impl Event for HawEventEntry {
         Ok(serde_json::from_str(&file_content)?)
     }
 
+    fn get_all_events_for_date(
+        date: NaiveDate,
+    ) -> Result<Vec<Self>, Box<dyn Error>> {
+        let config = Config::load_config();
+        let event_descriptors = config.get_events();
+
+        if event_descriptors.is_none() {
+            return Err("No event descriptors found in config".into());
+        }
+
+        let event_descriptors = event_descriptors.unwrap();
+
+        let mut events: Vec<Self> = vec![];
+        for meta in event_descriptors.iter() {
+            // Split format "department:module"
+            let (department, module) = meta.split_once(':').ok_or("Invalid event descriptor format")?;
+
+            // Build event_meta
+            let event_meta = Event_Meta {
+                department: department.to_string(),
+                module: module.to_string(),
+            };
+
+            let module_events = Self::get_events_for_module(&event_meta)?;
+            events.extend(module_events);
+        }
+
+        if events.is_empty() {
+            return Err(format!("No events found for date {}", date).into());
+        }
+
+        // Filter events for the specified date
+        events.retain(|event| event.start.date() == date);
+
+        Ok(events)
+    }
+
     fn get_events_for_date(
         event_descriptor: Vec<Event_Meta>,
         date: NaiveDate,
@@ -103,7 +140,7 @@ impl Event for HawEventEntry {
         Ok(events)
     }
 
-    fn fetch_events_for_module(event: &Event_Meta) -> Result<Vec<Self>, Box<dyn Error>> {
+    fn fetch_events_for_module(event: &Event_Meta, department: &str) -> Result<Vec<Self>, Box<dyn Error>> {
         if event.department.is_empty() || event.module.is_empty() {
             return Err(format!(
                 "Department and module must be specified. Got: department='{}', module='{}'",
@@ -226,5 +263,15 @@ impl Event for HawEventEntry {
         }
 
         Ok(departments)
+    }
+}
+
+impl fmt::Display for HawEventEntry {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "{}\nLocation: {}\nDescription: {}\nStart: {}\nEnd: {}",
+            self.name, self.location, self.description, self.start, self.end
+        )
     }
 }

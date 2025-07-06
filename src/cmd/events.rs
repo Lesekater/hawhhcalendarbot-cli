@@ -3,6 +3,7 @@ use crate::events::{
     event::{self, Event},
     haw_event::HawEventEntry,
 };
+use crate::json_parser::Config;
 use chrono::NaiveDate;
 use clap::{Parser, Subcommand};
 
@@ -35,6 +36,20 @@ enum EventCommands {
         /// The department to list modules for
         department: String,
     },
+    /// Add module to config
+    Add {
+        /// The module to add
+        module: String,
+        /// The department of the module
+        department: String,
+    },
+    /// Remove module from config
+    Remove {
+        /// The module to remove
+        module: String,
+        /// The department of the module
+        department: String,
+    },
 }
 
 impl Cmd {
@@ -52,6 +67,8 @@ impl Cmd {
                 // Build Event_Meta vector (department is required, adjust as needed)
                 let mut event_meta = Vec::new();
                 if let Some(module) = module {
+                    let config = Config::load_config();
+                    dbg!(config.get_events());
                     event_meta.push(Event_Meta {
                         department: String::from("informatik"), // TODO: set department from config or input
                         module,
@@ -59,14 +76,21 @@ impl Cmd {
                 }
 
                 // Call the trait method via fully qualified syntax
-                let events: Vec<HawEventEntry> = Event::get_events_for_date(event_meta, date)?;
+                let events: Vec<HawEventEntry>;
+                if event_meta.is_empty() {
+                    // If no module or date is provided, default to config
+                    events = Event::get_all_events_for_date(date)?;
+                } else {
+                    // Use the provided module and date
+                    events = Event::get_events_for_date(event_meta, date)?;
+                }
 
                 // Output events (as JSON or plain)
                 if self.json {
                     println!("{}", serde_json::to_string_pretty(&events)?);
                 } else {
                     for event in events {
-                        println!("{:?}", event);
+                        println!("{}\n", event);
                     }
                 }
             }
@@ -96,6 +120,22 @@ impl Cmd {
                         println!("{}", module);
                     }
                 }
+            }
+            EventCommands::Add { module, department } => {
+                // Add a module to the config
+                println!("Setting module '{}' in department '{}'...", module, department);
+
+                let mut cfg = Config::load_config();
+                cfg.add_module(&module, &department)?;
+                Config::save_config_json(&cfg);
+            }
+            EventCommands::Remove { module, department } => {
+                // Remove a module from the config
+                println!("Removing module '{}' in department '{}'...", module, department);
+
+                let mut cfg = Config::load_config();
+                cfg.remove_module(&module, &department)?;
+                Config::save_config_json(&cfg);
             }
         }
         Ok(())

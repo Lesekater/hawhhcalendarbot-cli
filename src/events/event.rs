@@ -19,11 +19,15 @@ pub struct Event_Meta {
 
 /// Trait for event data sources, providing methods for loading, fetching, and caching event data.
 pub trait Event: Sized {
+
+    /// Return all events configured in config for a given date.
+    fn get_all_events_for_date(date: NaiveDate) -> Result<Vec<Self>, Box<dyn Error>>;
+
     /// Returns all events for a module in a given Department.
     /// Attempts to load from local cache, falling back to remote fetch if unavailable.
     fn get_events_for_module(event: &Event_Meta) -> Result<Vec<Self>, Box<dyn Error>> {
         let cache_dir = Self::get_cache_dir()?;
-        Self::load_from_local(event, cache_dir).or_else(|_| Self::fetch_events_for_module(event))
+        Self::load_from_local(event, cache_dir).or_else(|_| Self::fetch_events_for_module(event, &event.department))
     }
 
     /// Returns all events for the given descriptors on a specific date.
@@ -44,7 +48,7 @@ pub trait Event: Sized {
         Self: Sized;
 
     /// Fetches events for a single module from a remote source.
-    fn fetch_events_for_module(event: &Event_Meta) -> Result<Vec<Self>, Box<dyn Error>>
+    fn fetch_events_for_module(event: &Event_Meta, department: &str) -> Result<Vec<Self>, Box<dyn Error>>
     where
         Self: Sized;
 

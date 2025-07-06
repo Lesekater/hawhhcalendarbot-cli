@@ -171,6 +171,41 @@ impl Config {
         self.vpassword = Some(password);
     }
 
+    /// Add module for events
+    pub fn add_module(&mut self, module: &str, department: &str) -> Result<(), String> {
+        if let Some(events) = &mut self.events {
+            let module_entry = format!("{}:{}", department, module);
+            if !events.contains(&module_entry) {
+                events.push(module_entry);
+                Ok(())
+            } else {
+                Err(format!("Module '{}' in department '{}' already exists.", module, department))
+            }
+        } else {
+            Err("Events list is not initialized.".to_string())
+        }
+    }
+
+    /// Remove module for events
+    pub fn remove_module(&mut self, module: &str, department: &str) -> Result<(), String> {
+        if let Some(events) = &mut self.events {
+            let module_entry = format!("{}:{}", department, module);
+            if events.contains(&module_entry) {
+                events.retain(|e| e != &module_entry);
+                Ok(())
+            } else {
+                Err(format!("Module '{}' in department '{}' does not exist.", module, department))
+            }
+        } else {
+            Err("Events list is not initialized.".to_string())
+        }
+    }
+
+    /// Get all events
+    pub fn get_events(&self) -> Option<&Vec<String>> {
+        self.events.as_ref()
+    }
+
     pub fn get_password(&self) -> Option<String>{
         self.vpassword.clone()
     }
