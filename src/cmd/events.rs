@@ -56,10 +56,6 @@ impl Cmd {
     pub fn run(self) -> Result<(), Box<dyn std::error::Error>> {
         match self.command {
             EventCommands::Get { date, module } => {
-                // TODO: Use timecode val to reload event data if needed
-                HawEventEntry::fetch_event_data(&HawEventEntry::get_cache_dir()?)?;
-                println!("");
-
                 // Parse date string to NaiveDate
                 let date = NaiveDate::parse_from_str(&date, "%Y-%m-%d").map_err(|_| {
                     format!(
@@ -104,6 +100,10 @@ impl Cmd {
                 println!("Event data fetched and stored successfully.");
             }
             EventCommands::ListDepartments => {
+                // TODO: Use timecode val to reload event data if needed
+                HawEventEntry::fetch_event_data(&HawEventEntry::get_cache_dir()?)?;
+                println!("");
+
                 // List all departments that have events
                 let departments = HawEventEntry::get_departments()?;
                 if self.json {
@@ -115,6 +115,10 @@ impl Cmd {
                 }
             }
             EventCommands::ListModules { department } => {
+                // TODO: Use timecode val to reload event data if needed
+                HawEventEntry::fetch_event_data(&HawEventEntry::get_cache_dir()?)?;
+                println!("");
+
                 // List all modules for the specified department
                 let modules = HawEventEntry::get_modules_for_department(&department, self.filter.as_deref())?;
                 if self.json {
@@ -126,6 +130,16 @@ impl Cmd {
                 }
             }
             EventCommands::Add { module, department } => {
+                // Check if module is valid
+                let valid_modules = HawEventEntry::get_modules_for_department(&department, None)?;
+
+                if !valid_modules.contains(&module) {
+                    return Err(format!(
+                        "Invalid module '{}' for department '{}'",
+                        module, department
+                    ).into());
+                }
+
                 // Add a module to the config
                 println!("Setting module '{}' in department '{}'...", module, department);
 

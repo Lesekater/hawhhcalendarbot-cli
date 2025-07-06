@@ -151,6 +151,16 @@ impl Event for HawEventEntry {
             ).into());
         }
 
+        // Check if module is valid
+        let valid_modules = Self::get_modules_for_department(department, None)?;
+
+        if !valid_modules.contains(&event.module) {
+            return Err(format!(
+                "Invalid module '{}' for department '{}'",
+                event.module, department
+            ).into());
+        }
+
         let url = format!("{DATA_URL}/{}/{}.json", &event.department, &event.module);
 
         let result = reqwest::get(url)?;
