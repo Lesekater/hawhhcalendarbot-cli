@@ -5,8 +5,8 @@ test:
   stage: test
   image: rust
   script: cargo test
-  # rules:
-  #   - changes:
-  #       - "**/*.rs"
-  #       - "Cargo.toml"
-  #       - "Cargo.lock"
+  rules:
+    - changes:
+        - "**/*.rs"
+        - "Cargo.toml"
+        - "Cargo.lock"
