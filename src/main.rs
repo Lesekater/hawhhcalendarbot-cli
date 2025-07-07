@@ -31,9 +31,7 @@
 mod mensa;
 mod events;
 mod cmd;
-//mod config_managment;
 mod json_parser;
-mod events;
 
 use crate::cmd::Cli;
 

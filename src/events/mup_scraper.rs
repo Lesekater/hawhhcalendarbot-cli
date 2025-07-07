@@ -1,6 +1,3 @@
-// Deine ursprüngliche Formatierung und Kommentare werden jetzt berücksichtigt
-
-use clap::builder::Str;
 use reqwest::blocking::Client;
 use std::{error::Error};
 use scraper::{Html, Selector};
@@ -469,60 +466,4 @@ i = 6, rowspan = 2 -> start: 17:30 end: -----
     };
 
     (start.to_string(), end.to_string())
-}
-
-/*########################################
-Haw bot Interface
-########################################*/
-
-fn save_struct_to_json(structs:  &Vec<Vec<Lecture>>) -> std::io::Result<()> {
-
-    //Wir im Cache gespeichert:
-    let path = dirs::cache_dir().unwrap().join("hawhhcalendarbot\\Mechatronik");
-
-    let file = std::fs::File::create(path)?;
-    let writer = std::io::BufWriter::new(file);
-    serde_json::to_writer_pretty(writer, structs)?;
-    Ok(())
-
-}
-
-fn load_struct_from_json() -> std::io::Result<Vec<Vec<Lecture>>> {
-    //Wir im Cache gespeichert:
-    let path = dirs::cache_dir().unwrap().join("hawhhcalendarbot\\Mechatronik");
-
-    let file = std::fs::File::open(path)?;
-    let reader = std::io::BufReader::new(file);
-    let data = serde_json::from_reader(reader)?;
-    Ok(data)
-
-}
-
-
-pub fn fetch_all_plans(user: String, password: String) -> Result<Vec<Vec<Lecture>>, Box<dyn Error>>{
-    let base_url = "https://www.mp.haw-hamburg.de/auth/vorlesungsplan/";
-    let urls = generate_urls(base_url, "B_MT", ".php", 7);
-
-    let mut lectures: Vec<Vec<Lecture>> = Vec::new();
-
-    for (index, url) in urls.into_iter().enumerate() {
-
-        lectures.push(scrape_lecture_plan(user.clone(), password.clone(), url.clone() , index)?);
-        //println!("{:#?}", lectures);
-    }
-
-    
-
-    Ok(lectures)
-}
-
-pub fn fetch_one_semester(user: String, password: String, semester_index: usize) -> Result<Vec<Lecture>, Box<dyn Error>>{
-
-    let base_url = "https://www.mp.haw-hamburg.de/auth/vorlesungsplan/";
-    let urls = generate_urls(base_url, "B_MT", ".php", 7);
-
-    let lectures = scrape_lecture_plan(user.clone(), password.clone(), urls[semester_index].clone() , semester_index)?;
-    //println!("{:#?}", lectures);
-    
-    Ok(lectures)
 }
