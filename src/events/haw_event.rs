@@ -38,7 +38,7 @@ impl Event for HawEventEntry {
         let cache_dir_str = cache_dir
             .to_str()
             .ok_or("Cache directory path is not valid")?;
-        let mut file: File = File::open(format!("{}/eventadata/timestamp", &cache_dir_str))?;
+        let mut file: File = File::open(format!("{}/eventdata/timestamp", &cache_dir_str))?;
         let mut contents = String::new();
 
         file.read_to_string(&mut contents)?;
