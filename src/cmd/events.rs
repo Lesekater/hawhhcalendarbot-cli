@@ -72,7 +72,7 @@ impl Cmd {
                 let mut event_meta = Vec::new();
                 if let Some(module) = module {
                     let config = Config::load_config();
-                    dbg!(config.get_events());
+                    config.get_events();
                     event_meta.push(Event_Meta {
                         department: String::from("informatik"), // TODO: set department from config or input
                         module,
