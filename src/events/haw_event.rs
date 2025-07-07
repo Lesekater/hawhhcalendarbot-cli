@@ -239,21 +239,20 @@ impl Event for HawEventEntry {
     fn get_modules_for_department(department: &str, filter: Option<&str>) -> Result<Vec<String>, Box<dyn Error>> {
         let cache_dir = Self::get_cache_dir()?;
         let eventdata_path = Self::get_eventdata_dir(&cache_dir)?;
+        let department_path = eventdata_path.join(department);
 
+        // If event data directory doesn't exist at all, fetch it
         if !eventdata_path.exists() {
-            return Err("Event data directory does not exist".into());
+            println!("Event data directory does not exist. Fetching event data...");
+            Self::fetch_event_data(&cache_dir)?;
+            println!("");
         }
 
-        let department_path = eventdata_path.join(department);
-        if !department_path.exists() {
-            // try to refetch event data
-            HawEventEntry::fetch_event_data(&cache_dir)?;
+        // If specific department directory doesn't exist, also fetch event data
+        else if !department_path.exists() {
+            println!("Department '{}' directory does not exist locally. Fetching event data...", department);
+            Self::fetch_event_data(&cache_dir)?;
             println!("");
-
-            if !department_path.exists() {
-                // If the department still does not exist, return an error
-                return Err(format!("Department '{}' does not exist", department).into());
-            }
         }
 
         let mut modules = vec![];
