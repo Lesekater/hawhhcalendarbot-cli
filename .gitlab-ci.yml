@@ -3,7 +3,7 @@ stages:
 
 test:
   stage: test
-  image: rustlang/rust:nightly
+  image: rustlang/rust:latest
   script: cargo test
   rules:
     - changes:
