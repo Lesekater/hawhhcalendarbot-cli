@@ -1,4 +1,5 @@
 use clap::{Parser, Subcommand};
+use crate::cmd::mensa;
 use crate::json_parser::Config;
 use crate::json_parser::Extras;
 use crate::json_parser::Occupations;
@@ -27,7 +28,7 @@ pub enum SettingsCommands {
         /// The mensa to remove
         mensa: String,
     },
-    /// Lists all mensas
+    /// Lists all mensas configured in the settings
     List,
     /// Sets the occupation (student, employee, guest)
     Occupation {
@@ -88,13 +89,21 @@ impl Cmd {
                 Ok(())
             }
             SettingsCommands::List => {
-                println!("Listing all mensas.");
-                //todo!("Implement the logic to list all mensas in the settings");
-
                 let mut cfg = Config::load_config();
                 let mensa_list = cfg.get_mensa_list();
 
-                //Todo: Mensa liste in clap darstellen
+                match mensa_list {
+                    Some(list) if !list.is_empty() => {
+                        println!("Additional mensas configured in the settings:");
+                        for mensa in list {
+                            println!("- {}", mensa);
+                        }
+                    }
+                    _ => {
+                        println!("No additional mensas configured in the settings.");
+                        return Ok(());
+                    }
+                }
 
                 Ok(())
             }
