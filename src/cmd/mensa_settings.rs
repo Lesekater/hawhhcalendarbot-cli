@@ -1,5 +1,4 @@
 use clap::{Parser, Subcommand};
-use crate::cmd::mensa;
 use crate::json_parser::Config;
 use crate::json_parser::Extras;
 use crate::json_parser::Occupations;
@@ -61,7 +60,6 @@ impl Cmd {
         match self.command {
             SettingsCommands::Primary { mensa } => {
                 println!("Setting primary mensa to: {}", mensa);
-                //todo!("Implement the logic to set the primary mensa in the settings");
 
                 let mut cfg = Config::load_config();
                 cfg.update_primary_mensa(mensa);
@@ -70,7 +68,6 @@ impl Cmd {
             }
             SettingsCommands::Add { mensa } => {
                 println!("Adding mensa: {}", mensa);
-                //todo!("Implement the logic to add a mensa in the settings");
 
                 let mut cfg = Config::load_config();
                 cfg.update_mensa_list(mensa);
@@ -80,7 +77,6 @@ impl Cmd {
             }
             SettingsCommands::Remove { mensa } => {
                 println!("Removing mensa: {}", mensa);
-                //todo!("Implement the logic to remove a mensa in the settings");
 
                 let mut cfg = Config::load_config();
                 cfg.remove_mensa(mensa);
@@ -109,7 +105,6 @@ impl Cmd {
             }
             SettingsCommands::Occupation { occupation } => {
                 println!("Setting occupation to: {}", occupation);
-                //todo!("Implement the logic to set the occupation in the settings");
 
                 let mut cfg = Config::load_config();
                 let o = Occupations::from_str(&occupation).unwrap();
@@ -120,7 +115,6 @@ impl Cmd {
             }
             SettingsCommands::Extras { extras } => {
                 println!("Setting extras to: {}", extras);
-                //todo!("Implement the logic to set the extras in the settings");
 
                 let mut cfg = Config::load_config();
 
@@ -146,7 +140,7 @@ impl Cmd {
 
                 let mut cfg = Config::load_config();
 
-                //todo!("Passwort verschlüsselung einbauen");
+                //TODO: Passwort verschlüsselung einbauen
 
                 cfg.update_password(password);
 
