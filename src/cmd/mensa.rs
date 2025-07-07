@@ -121,19 +121,10 @@ impl Cmd {
 
         // Check primary mensa
         if additional_mensa.is_none() {
-            mensa_name = match config.get_primary_mensa() {
-                Some(name) => {
-                    if name.is_empty() {
-                        println!("Primary Mensa is not set - please set it in the config");
-                        return;
-                    }
-                    name
-                }
-                None => {
-                    println!("Primary Mensa is not set - please set it in the config");
-                    return;
-                }
-            };
+            mensa_name = config.get_primary_mensa().filter(|name| !name.is_empty()).unwrap_or_else(|| {
+                println!("Primary Mensa is not set - please set it in the config (cargo run mensa settings primary <name>)");
+                std::process::exit(1);
+            });
         }
 
         // If an additional mensa is specified, use it
