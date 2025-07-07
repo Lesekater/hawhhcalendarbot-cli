@@ -171,6 +171,41 @@ impl Config {
         self.vpassword = Some(password);
     }
 
+    /// Add module for events
+    pub fn add_module(&mut self, module: &str, department: &str) -> Result<(), String> {
+        if let Some(events) = &mut self.events {
+            let module_entry = format!("{}:{}", department, module);
+            if !events.contains(&module_entry) {
+                events.push(module_entry);
+                Ok(())
+            } else {
+                Err(format!("Module '{}' in department '{}' already exists.", module, department))
+            }
+        } else {
+            Err("Events list is not initialized.".to_string())
+        }
+    }
+
+    /// Remove module for events
+    pub fn remove_module(&mut self, module: &str, department: &str) -> Result<(), String> {
+        if let Some(events) = &mut self.events {
+            let module_entry = format!("{}:{}", department, module);
+            if events.contains(&module_entry) {
+                events.retain(|e| e != &module_entry);
+                Ok(())
+            } else {
+                Err(format!("Module '{}' in department '{}' does not exist.", module, department))
+            }
+        } else {
+            Err("Events list is not initialized.".to_string())
+        }
+    }
+
+    /// Get all events
+    pub fn get_events(&self) -> Option<&Vec<String>> {
+        self.events.as_ref()
+    }
+
     pub fn get_password(&self) -> Option<String>{
         self.vpassword.clone()
     }
@@ -228,13 +263,44 @@ impl Config {
         
 
         //End index, der gesucht berechnen:
-        let pm_end = config_content_cleaned.find(ConfigName::primary_mensa.as_str()).unwrap() + ConfigName::primary_mensa.as_str().len();
-        let ml_end = config_content_cleaned.find(ConfigName::mensa_list.as_str()).unwrap() + ConfigName::mensa_list.as_str().len();
-        let op_end = config_content_cleaned.find(ConfigName::occupation.as_str()).unwrap() + ConfigName::occupation.as_str().len();
-        let et_end = config_content_cleaned.find(ConfigName::extras.as_str()).unwrap() + ConfigName::extras.as_str().len();
-        let ev_end = config_content_cleaned.find(ConfigName::events.as_str()).unwrap() + ConfigName::events.as_str().len();
-        let un_end = config_content_cleaned.find(ConfigName::vusername.as_str()).unwrap() + ConfigName::vusername.as_str().len();
-        let up_end = config_content_cleaned.find(ConfigName::vpassword.as_str()).unwrap() + ConfigName::vpassword.as_str().len();
+
+        
+
+        let pm_end = match config_content_cleaned.find(ConfigName::primary_mensa.as_str()) {
+            Some(idx) => idx + ConfigName::primary_mensa.as_str().len(),
+            None => return Err("primary_mensa nicht gefunden".into()),
+        };
+
+        let ml_end = match config_content_cleaned.find(ConfigName::mensa_list.as_str()) {
+            Some(idx) => idx + ConfigName::mensa_list.as_str().len(),
+            None => return Err("mensa_list nicht gefunden".into()),
+        };
+
+        let op_end = match config_content_cleaned.find(ConfigName::occupation.as_str()) {
+            Some(idx) => idx + ConfigName::occupation.as_str().len(),
+            None => return Err("occupation nicht gefunden".into()),
+        };
+
+        let et_end = match config_content_cleaned.find(ConfigName::extras.as_str()) {
+            Some(idx) => idx + ConfigName::extras.as_str().len(),
+            None => return Err("extras nicht gefunden".into()),
+        };
+
+        let ev_end = match config_content_cleaned.find(ConfigName::events.as_str()) {
+            Some(idx) => idx + ConfigName::events.as_str().len(),
+            None => return Err("events nicht gefunden".into()),
+        };
+
+        let un_end = match config_content_cleaned.find(ConfigName::vusername.as_str()) {
+            Some(idx) => idx + ConfigName::vusername.as_str().len(),
+            None => return Err("vusername nicht gefunden".into()),
+        };
+
+        let up_end = match config_content_cleaned.find(ConfigName::vpassword.as_str()) {
+            Some(idx) => idx + ConfigName::vpassword.as_str().len(),
+            None => return Err("vpassword nicht gefunden".into()),
+        };
+
 
         //Inhalt der primary mensa extrahieren:
 

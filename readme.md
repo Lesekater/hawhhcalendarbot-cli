@@ -46,3 +46,13 @@ This project is part of the Rust WP SoSe2025 course. The goal is to create a com
 - Elektrotechnik schedules also provide ICS files, but other departments may require additional parsing efforts.
 
 - instead of secondary mensas we will implment aliases wich replace the add and remove commands with alias. Addritial Mensas can be accesed via a flag --mensa \<alias>
+
+## Example Usage
+```bash
+# List modules for a specific department (with filtering)
+cargo run events list-modules informatik --filter "ad"
+# Add event to config
+cargo run events add bai3-ad informatik
+# List all events for a specific date
+cargo run events get 2025-07-04
+```
