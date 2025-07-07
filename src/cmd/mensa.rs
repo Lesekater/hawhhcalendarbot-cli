@@ -52,7 +52,7 @@ enum MensaCommands {
 
 impl Cmd {
     pub fn run(self) -> Result<(), Box<dyn std::error::Error>> {
-        let handle = HawMeal::update_mensa_data();
+        let mut update_handle = None;
 
         let currentdate = chrono::Local::now().date_naive();
 
@@ -61,6 +61,7 @@ impl Cmd {
             Some(MensaCommands::Today { .. })
             | Some(MensaCommands::Tomorrow { .. })
             | Some(MensaCommands::Date { .. }) => {
+                update_handle = Some(HawMeal::update_mensa_data());
                 self.date_command(&self.command, currentdate);
             }
             // Update/ Cache commands
@@ -76,11 +77,12 @@ impl Cmd {
             Some(MensaCommands::Settings(cmd)) => cmd.run()?,
             // Default case for today if no command is specified
             None => {
+                update_handle = Some(HawMeal::update_mensa_data());
                 self.date_command(&Some(MensaCommands::Today { number: self.number }), currentdate);
             }
         }
 
-        if !handle.is_finished() {
+        if let Some(handle) = update_handle && !handle.is_finished() {
             println!("\nWaiting for mensa data update to finish...");
             let _ = handle.join();
         }
