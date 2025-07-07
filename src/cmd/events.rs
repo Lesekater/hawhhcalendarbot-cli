@@ -1,6 +1,6 @@
-use crate::events::event::Event_Meta;
+use crate::events::event::EventMeta;
 use crate::events::{
-    event::{self, Event},
+    event::Event,
     haw_event::HawEventEntry,
 };
 use crate::json_parser::Config;
@@ -82,7 +82,7 @@ impl Cmd {
 
                     let config = Config::load_config();
                     config.get_events();
-                    event_meta.push(Event_Meta {
+                    event_meta.push(EventMeta {
                         department: department.expect("No department provided").to_lowercase(),
                         module: module.to_lowercase(),
                     });

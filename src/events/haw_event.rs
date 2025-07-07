@@ -1,8 +1,5 @@
 use std::{
-    collections::BTreeMap,
-    env::VarError,
     error::Error,
-    ffi::NulError,
     fmt,
     fs::{self, File},
     io::{Read, Write},
@@ -11,13 +8,12 @@ use std::{
 };
 
 use chrono::{Datelike, NaiveDate, NaiveDateTime};
-use regex::Regex;
 use reqwest::blocking as reqwest;
 use serde::{Deserialize, Serialize};
 
 use super::mup_scraper::MupLecture;
 
-use crate::{events::{event::*, mup_scraper}, json_parser::{Config, Occupations}};
+use crate::{events::{event::*}, json_parser::Config};
 
 
 const DATA_URL: &str =
@@ -35,7 +31,7 @@ pub struct HawEventEntry {
 
 impl Event for HawEventEntry {
     fn load_from_local(
-        event: &Event_Meta,
+        event: &EventMeta,
         cache_dir: PathBuf,
     ) -> Result<Vec<Self>, Box<dyn Error>> {
         // Read timestamp of local event data
@@ -98,7 +94,7 @@ impl Event for HawEventEntry {
             let (department, module) = meta.split_once(':').ok_or("Invalid event descriptor format")?;
 
             // Build event_meta
-            let event_meta = Event_Meta {
+            let event_meta = EventMeta {
                 department: department.to_string(),
                 module: module.to_string(),
             };
@@ -118,7 +114,7 @@ impl Event for HawEventEntry {
     }
 
     fn get_events_for_date(
-        event_descriptor: Vec<Event_Meta>,
+        event_descriptor: Vec<EventMeta>,
         date: NaiveDate,
     ) -> Result<Vec<Self>, Box<dyn Error>> {
         let mut events: Vec<Self> = vec![];
@@ -143,7 +139,7 @@ impl Event for HawEventEntry {
         Ok(events)
     }
 
-    fn fetch_events_for_module(event: &Event_Meta, department: &str) -> Result<Vec<Self>, Box<dyn Error>> {
+    fn fetch_events_for_module(event: &EventMeta, department: &str) -> Result<Vec<Self>, Box<dyn Error>> {
         if event.department.is_empty() || event.module.is_empty() {
             return Err(format!(
                 "Department and module must be specified. Got: department='{}', module='{}'",
