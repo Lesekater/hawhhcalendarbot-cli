@@ -150,7 +150,7 @@ impl Cmd {
 
                 let path = dirs::config_local_dir()
                         .unwrap()
-                        .join("hawhhcalendarbot/cfg.json");
+                        .join("hawhhcalendarbot-cli/cfg.json");
 
                 match fs::read_to_string(&path) {
                     Ok(_) => println!("Config file is here: {}", path.display()),
@@ -164,7 +164,7 @@ impl Cmd {
             SettingsCommands::Delet {  } => {
                 let path = dirs::config_local_dir()
                             .unwrap()
-                            .join("hawhhcalendarbot/cfg.json");
+                            .join("hawhhcalendarbot-cli/cfg.json");
 
                 if path.exists() {
                     match fs::remove_file(&path) {
