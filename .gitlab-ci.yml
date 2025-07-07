@@ -6,7 +6,7 @@ test:
   image: rustlang/rust:latest
   script: cargo test
   rules:
-    # - changes:
-    #     - "**/*.rs"
-    #     - "Cargo.toml"
-    #     - "Cargo.lock"
+    - changes:
+        - "**/*.rs"
+        - "Cargo.toml"
+        - "Cargo.lock"
