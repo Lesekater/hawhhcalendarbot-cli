@@ -246,7 +246,14 @@ impl Event for HawEventEntry {
 
         let department_path = eventdata_path.join(department);
         if !department_path.exists() {
-            return Err(format!("Department '{}' does not exist", department).into());
+            // try to refetch event data
+            HawEventEntry::fetch_event_data(&cache_dir)?;
+            println!("");
+
+            if !department_path.exists() {
+                // If the department still does not exist, return an error
+                return Err(format!("Department '{}' does not exist", department).into());
+            }
         }
 
         let mut modules = vec![];
