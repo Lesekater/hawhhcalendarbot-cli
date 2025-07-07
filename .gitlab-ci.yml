@@ -3,10 +3,10 @@ stages:
 
 test:
   stage: test
-  image: rustlang/rust:latest
+  image: rustlang/rust
   script: cargo test
   rules:
-    - changes:
-        - "**/*.rs"
-        - "Cargo.toml"
-        - "Cargo.lock"
+    # - changes:
+    #     - "**/*.rs"
+    #     - "Cargo.toml"
+    #     - "Cargo.lock"
