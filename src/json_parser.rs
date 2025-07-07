@@ -213,7 +213,7 @@ impl Config {
     pub fn load_config() -> Config {
         let path = dirs::config_local_dir()
                 .unwrap()
-                .join("hawhhcalendarbot/cfg.json");
+                .join("hawhhcalendarbot-cli/cfg.json");
         match fs::read_to_string(path,
         ) {
             Ok(json_config) => Config::struct_from_json_file(&json_config).expect("Fehler beim Parsen der JSON"),
@@ -223,7 +223,7 @@ impl Config {
     }
 
     pub fn save_config_json(user_config: &Config) {
-        let conf_dir = dirs::config_local_dir().unwrap().join("hawhhcalendarbot");
+        let conf_dir = dirs::config_local_dir().unwrap().join("hawhhcalendarbot-cli");
 
         let json_string = Config::json_file_from_struct(user_config).expect("Fehler beim Serialisieren");
         let _ = fs::create_dir_all(conf_dir);
@@ -231,7 +231,7 @@ impl Config {
         fs::write(
             dirs::config_local_dir()
                 .unwrap()
-                .join("hawhhcalendarbot/cfg.json"),
+                .join("hawhhcalendarbot-cli/cfg.json"),
         json_string,
         )
         .expect("Fehler beim Schreiben der Datei");
