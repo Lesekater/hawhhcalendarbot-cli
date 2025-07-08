@@ -1,7 +1,9 @@
 // Deine ursprüngliche Formatierung und Kommentare werden jetzt berücksichtigt
 
+use chrono::{Datelike, Local};
 use clap::builder::Str;
 use reqwest::blocking::Client;
+use std::time::Duration;
 use std::{error::Error};
 use scraper::{Html, Selector};
 use regex::Regex;
@@ -10,7 +12,8 @@ use std::io::BufReader;
 use std::io::BufWriter;
 use std::fs::File;
 use std::fs;
-use chrono::{NaiveDate, NaiveDateTime, NaiveTime};
+use chrono::Duration as ChronoDuration;
+use chrono::{NaiveDate, NaiveDateTime, NaiveTime,  Weekday};
 #[derive(Debug, Serialize, Deserialize)]
 pub struct MupLecture {
     name: String,
@@ -117,7 +120,7 @@ impl MupLecture {
                 if !content.is_empty() && i > 0 && j > 0 {
                     if let Some(parsed_infos) = Self::parse_lecture_info(content) {
                         for (name, prof, location, description) in parsed_infos {
-                            let (start_time, end_time) = Self::calc_lecture_hours(i, *rowspan);
+                            let (start_time, end_time) = Self::calc_lecture_hours(i, *rowspan, &LectureDay::from_index(j));
                            
                            let mut disc = String::new();
                             match title {
@@ -244,7 +247,19 @@ impl MupLecture {
         Some(output_vec)
     }
 
-    fn calc_lecture_hours(index: usize, rowspan: usize) -> (NaiveDateTime, NaiveDateTime) {
+    fn weekday_to_english(weekday: Weekday) -> &'static str {
+    match weekday {
+        Weekday::Mon => "Monday",
+        Weekday::Tue => "Tuesday",
+        Weekday::Wed => "Wednesday",
+        Weekday::Thu => "Thursday",
+        Weekday::Fri => "Friday",
+        Weekday::Sat => "Saturday",
+        Weekday::Sun => "Sunday",
+        }
+    }
+
+    fn calc_lecture_hours(index: usize, rowspan: usize, discription: &String) -> (NaiveDateTime, NaiveDateTime) {
     let time_slots = [
         ("08:15", "09:45"),
         ("10:00", "11:30"),
@@ -257,11 +272,37 @@ impl MupLecture {
     // Dummy-Datum verwenden, da nur Zeit relevant ist
     let dummy_date = NaiveDate::from_ymd_opt(1970, 1, 1).unwrap();
 
+    let date_today  = Local::now().date_naive();
+    let given_day: String = discription.chars().rev()
+        .take_while(|&c| c != ' ')
+        .collect::<String>()
+        .chars()
+        .rev()
+        .collect();
+
+    //println!("Tag: {}", given_day);
+
+    let mut date: NaiveDate = dummy_date;
+    let mut next_day = date_today;
+
+    for _ in 0..10 {
+
+        
+        if  given_day == Self::weekday_to_english(next_day.weekday()){
+            println!("Tag gefunden: {}", next_day);
+            date = next_day;
+            //break;
+        }else {
+            next_day = next_day + ChronoDuration::days(1);
+        }
+
+    }
+
     if index == 0 || index > time_slots.len() {
         // Rückgabe von minimalen gültigen Zeitpunkten, alternativ kannst du Option<T> verwenden
         return (
-            NaiveDateTime::new(dummy_date, NaiveTime::from_hms_opt(0, 0, 0).unwrap()),
-            NaiveDateTime::new(dummy_date, NaiveTime::from_hms_opt(0, 0, 0).unwrap()),
+            NaiveDateTime::new(date, NaiveTime::from_hms_opt(0, 0, 0).unwrap()),
+            NaiveDateTime::new(date, NaiveTime::from_hms_opt(0, 0, 0).unwrap()),
         );
     }
 
@@ -283,8 +324,8 @@ impl MupLecture {
     let end_time = NaiveTime::parse_from_str(end_str, "%H:%M").unwrap();
 
     (
-        NaiveDateTime::new(dummy_date, start_time),
-        NaiveDateTime::new(dummy_date, end_time),
+        NaiveDateTime::new(date, start_time),
+        NaiveDateTime::new(date, end_time),
     )
 }
 
