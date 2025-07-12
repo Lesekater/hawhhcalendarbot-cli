@@ -93,7 +93,7 @@ hawhhcalendarbot-cli mensa settings config
 hawhhcalendarbot-cli mensa settings delete
 ```
 
-### Events Commands (Coming Soon)
+### Events Commands
 
 ```bash
 # List modules for a specific department (with filtering)
